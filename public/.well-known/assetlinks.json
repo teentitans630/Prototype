@@ -4,7 +4,7 @@
       "target": {
         "namespace": "android_app",
         "package_name": "com.smartreferral.app",
-        "sha256_cert_fingerprints": ["A1:86:0A:16:2F:AD:FC:FB:9C:B9:71:28:77:A2:86:25:A5:66:DB:95:D9:5F:1D:56:E7:FA:FE:CC:FA:0E:A1:55"]
+        "sha256_cert_fingerprints": ["87:0D:9D:6B:F3:4D:40:F6:2D:1B:63:D9:2B:30:D8:C8:06:BD:0F:4E:A0:43:34:10:B3:7E:83:98:DE:C0:22:9E"]
       }
    }
 ]
