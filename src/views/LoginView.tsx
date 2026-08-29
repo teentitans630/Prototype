@@ -11,6 +11,8 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  User,
+  QrCode,
 } from 'lucide-react';
 
 interface LoginViewProps {
@@ -19,9 +21,9 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const { login } = useApp();
-  const [email, setEmail] = useState('doctor@demo.com');
+  const [email, setEmail] = useState('patient@demo.com');
   const [password, setPassword] = useState('Demo@123');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('phc_doctor');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,7 +60,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             Smart Referral System
           </h1>
           <p className="text-xs text-slate-500 mt-1 max-w-xs">
-            Mobile-First Tele-Triage & Automated Clinical Facility Matching Platform
+            Mobile-First Tele-Triage, QR Digital Referral Pass & Clinical Matching
           </p>
         </div>
 
@@ -72,6 +74,29 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div className="grid grid-cols-1 gap-2">
+            {/* Patient - Featured */}
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('patient', 'patient@demo.com')}
+              className="flex items-center justify-between p-3 rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100/80 text-left transition active:scale-[0.99] group shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    Ravi Kumar
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
+                      PATIENT PORTAL
+                    </span>
+                  </div>
+                  <div className="text-xs text-amber-900/80 font-medium">Digital QR Pass • Active Referral Status</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-amber-700 group-hover:translate-x-0.5 transition" />
+            </button>
+
             {/* Doctor */}
             <button
               type="button"
@@ -86,7 +111,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                   <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                     Dr. Anjali Rao
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800">
-                      PHC
+                      DOCTOR
                     </span>
                   </div>
                   <div className="text-xs text-slate-500">doctor@demo.com • PHC Kukatpally</div>
@@ -109,7 +134,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                   <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                     District Hospital Desk
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-800">
-                      Hospital
+                      HOSPITAL
                     </span>
                   </div>
                   <div className="text-xs text-slate-500">hospital@demo.com • Triage & CCU</div>
@@ -132,7 +157,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                   <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                     System Administrator
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-200 text-purple-800">
-                      Admin
+                      ADMIN
                     </span>
                   </div>
                   <div className="text-xs text-slate-500">admin@demo.com • Command Center</div>
@@ -165,7 +190,21 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Select Role
             </label>
-            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200">
+            <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole('patient');
+                  setEmail('patient@demo.com');
+                }}
+                className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                  selectedRole === 'patient'
+                    ? 'bg-white text-amber-800 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Patient
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -178,7 +217,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                PHC Doctor
+                Doctor
               </button>
               <button
                 type="button"
@@ -221,7 +260,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="doctor@demo.com"
+                placeholder="patient@demo.com"
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 required
               />

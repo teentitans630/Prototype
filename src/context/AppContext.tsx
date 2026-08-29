@@ -26,10 +26,12 @@ interface AppContextType {
   patients: Patient[];
   referrals: Referral[];
   statusHistory: ReferralStatusHistory[];
+  activePatientId: string;
+  setActivePatientId: (id: string) => void;
   
   // Auth
-  login: (email: string, role: UserRole) => boolean;
-  switchDemoUser: (role: UserRole) => void;
+  login: (email: string, role: UserRole, patientId?: string) => boolean;
+  switchDemoUser: (role: UserRole, patientId?: string) => void;
   logout: () => void;
   
   // Patients
@@ -105,6 +107,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : SEED_REFERRAL_HISTORY;
   });
 
+  const [activePatientId, setActivePatientId] = useState<string>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}active_patient`);
+    return saved || 'pat-01'; // Default to Ravi Kumar (pat-01)
+  });
+
   // Save to localStorage on state changes
   useEffect(() => {
     if (currentUser) {
@@ -113,6 +120,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem(`${STORAGE_KEY_PREFIX}user`);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}active_patient`, activePatientId);
+  }, [activePatientId]);
 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}facilities`, JSON.stringify(facilities));
@@ -134,7 +145,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY_PREFIX}history`, JSON.stringify(statusHistory));
   }, [statusHistory]);
 
-  const login = (email: string, role: UserRole): boolean => {
+  const login = (email: string, role: UserRole, patientId?: string): boolean => {
+    if (role === 'patient') {
+      const pid = patientId || activePatientId || 'pat-01';
+      const patientObj = patients.find((p) => p.id === pid) || patients[0];
+      const patientUser: UserProfile = {
+        id: `user-${patientObj.id}`,
+        email: email || 'patient@demo.com',
+        name: patientObj.name,
+        role: 'patient',
+        facility_id: null,
+        facility_name: 'Patient Portal',
+        patient_id: patientObj.id,
+        phone: patientObj.phone,
+        created_at: new Date().toISOString(),
+      };
+      setActivePatientId(patientObj.id);
+      setCurrentUser(patientUser);
+      return true;
+    }
+
     const found = SEED_PROFILES.find((p) => p.email.toLowerCase() === email.toLowerCase() || p.role === role);
     if (found) {
       setCurrentUser(found);
@@ -154,7 +184,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const switchDemoUser = (role: UserRole) => {
+  const switchDemoUser = (role: UserRole, patientId?: string) => {
+    if (role === 'patient') {
+      const pid = patientId || activePatientId || 'pat-01';
+      const patientObj = patients.find((p) => p.id === pid) || patients[0];
+      const patientUser: UserProfile = {
+        id: `user-${patientObj.id}`,
+        email: 'patient@demo.com',
+        name: patientObj.name,
+        role: 'patient',
+        facility_id: null,
+        facility_name: 'Patient Portal',
+        patient_id: patientObj.id,
+        phone: patientObj.phone,
+        created_at: new Date().toISOString(),
+      };
+      setActivePatientId(patientObj.id);
+      setCurrentUser(patientUser);
+      return;
+    }
+
     const found = SEED_PROFILES.find((p) => p.role === role);
     if (found) {
       setCurrentUser(found);
@@ -403,6 +452,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         patients,
         referrals,
         statusHistory,
+        activePatientId,
+        setActivePatientId,
         login,
         switchDemoUser,
         logout,

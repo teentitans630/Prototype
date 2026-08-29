@@ -5,6 +5,7 @@ import { LoginView } from './views/LoginView';
 import { PHCDashboardView } from './views/PHCDashboardView';
 import { HospitalDashboardView } from './views/HospitalDashboardView';
 import { AdminDashboardView } from './views/AdminDashboardView';
+import { PatientDashboardView } from './views/PatientDashboardView';
 import { PatientsListView } from './views/PatientsListView';
 import { PatientProfileView } from './views/PatientProfileView';
 import { RegisterPatientView } from './views/RegisterPatientView';
@@ -25,6 +26,7 @@ function MainApp() {
   const { currentUser } = useApp();
   const [navState, setNavState] = useState<NavigationState>(() => {
     if (!currentUser) return { view: 'login' };
+    if (currentUser.role === 'patient') return { view: 'patient_dashboard' };
     if (currentUser.role === 'phc_doctor') return { view: 'phc_dashboard' };
     if (currentUser.role === 'hospital_staff') return { view: 'hospital_dashboard' };
     return { view: 'admin_dashboard' };
@@ -36,7 +38,9 @@ function MainApp() {
   };
 
   const handleLoginSuccess = (role: UserRole) => {
-    if (role === 'phc_doctor') {
+    if (role === 'patient') {
+      handleNavigate('patient_dashboard');
+    } else if (role === 'phc_doctor') {
       handleNavigate('phc_dashboard');
     } else if (role === 'hospital_staff') {
       handleNavigate('hospital_dashboard');
@@ -53,6 +57,9 @@ function MainApp() {
   // Render view inside AppShell
   const renderCurrentView = () => {
     switch (navState.view) {
+      case 'patient_dashboard':
+        return <PatientDashboardView onNavigate={handleNavigate} />;
+
       case 'phc_dashboard':
         return <PHCDashboardView onNavigate={handleNavigate} />;
 

@@ -1,4 +1,4 @@
-export type UserRole = 'phc_doctor' | 'hospital_staff' | 'admin';
+export type UserRole = 'phc_doctor' | 'hospital_staff' | 'admin' | 'patient';
 
 export type ReferralPriority = 'emergency' | 'urgent' | 'routine';
 
@@ -44,6 +44,7 @@ export interface UserProfile {
   role: UserRole;
   facility_id: string | null;
   facility_name?: string;
+  patient_id?: string;
   avatar?: string;
   phone?: string;
   created_at: string;

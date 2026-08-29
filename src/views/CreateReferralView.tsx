@@ -30,6 +30,7 @@ import {
   FileCheck,
   Building2,
   Info,
+  QrCode,
 } from 'lucide-react';
 
 interface CreateReferralViewProps {
@@ -51,6 +52,8 @@ export const CreateReferralView: React.FC<CreateReferralViewProps> = ({
     facilityServices,
     currentUser,
     createReferral,
+    setActivePatientId,
+    switchDemoUser,
   } = useApp();
 
   // Multi-step flow: 'form' -> 'matching' -> 'confirm' -> 'success'
@@ -889,20 +892,37 @@ export const CreateReferralView: React.FC<CreateReferralViewProps> = ({
           </div>
 
           {/* Quick Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 max-w-xs mx-auto pt-2">
+          <div className="flex flex-col gap-2.5 max-w-sm mx-auto pt-2">
             <button
-              onClick={() => onNavigate('referral_detail', { id: createdReferralId })}
-              className="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition"
+              id="btn-view-as-patient"
+              onClick={() => {
+                if (selectedPatient) {
+                  setActivePatientId(selectedPatient.id);
+                  switchDemoUser('patient', selectedPatient.id);
+                }
+                onNavigate('patient_dashboard');
+              }}
+              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-extrabold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition active:scale-[0.98]"
             >
-              View Referral Details & Timeline
+              <QrCode className="w-4 h-4" />
+              <span>Switch to Patient View (Live QR Pass)</span>
             </button>
 
-            <button
-              onClick={() => onNavigate('phc_dashboard')}
-              className="w-full py-3 rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition"
-            >
-              Back to Dashboard
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onNavigate('referral_detail', { id: createdReferralId })}
+                className="py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition"
+              >
+                Referral Details
+              </button>
+
+              <button
+                onClick={() => onNavigate('phc_dashboard')}
+                className="py-3 rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition"
+              >
+                Dashboard
+              </button>
+            </div>
           </div>
         </div>
       )}

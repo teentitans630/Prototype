@@ -102,6 +102,17 @@ export const SEED_PROFILES: UserProfile[] = [
     phone: '+91 98490 00000',
     created_at: '2026-01-15T09:00:00Z',
   },
+  {
+    id: 'user-pat-01',
+    email: 'patient@demo.com',
+    name: 'Ravi Kumar',
+    role: 'patient',
+    facility_id: null,
+    facility_name: 'Patient Portal',
+    patient_id: 'pat-01',
+    phone: '9999999999',
+    created_at: '2026-01-15T09:00:00Z',
+  },
 ];
 
 export const SEED_PATIENTS: Patient[] = [
