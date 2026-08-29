@@ -107,8 +107,17 @@ export const AppShell: React.FC<AppShellProps> = ({
                 else onNavigate('admin_dashboard');
               }}
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-700 to-teal-500 text-white flex items-center justify-center shadow-md shadow-teal-700/20 shrink-0">
-                <HeartPulse className="w-5 h-5 animate-pulse" />
+              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-teal-100 bg-white p-0.5 shrink-0 flex items-center justify-center">
+                <img
+                  src="/icon-192.png"
+                  alt="Smart Referral Icon"
+                  className="w-full h-full object-contain rounded-lg"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    // Fallback to gradient icon if image fails
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">

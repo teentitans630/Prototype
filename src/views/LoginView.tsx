@@ -53,8 +53,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8">
         {/* App Header & Branding */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-700 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-700/25 mb-4">
-            <HeartPulse className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-teal-700/20 mb-3 border border-teal-100 bg-white p-1">
+            <img
+              src="/icon-192.png"
+              alt="Smart Referral App Icon"
+              className="w-full h-full object-contain rounded-xl"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Smart Referral System
