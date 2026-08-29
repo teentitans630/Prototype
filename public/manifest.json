@@ -1,6 +1,6 @@
 {
   "name": "Smart Referral System",
-  "short_name": "SmartReferral",
+  "short_name": "Smart Referral",
   "description": "Mobile-first PWA connecting Primary Health Centres with hospitals for patient triage and referrals",
   "start_url": "/",
   "display": "standalone",
