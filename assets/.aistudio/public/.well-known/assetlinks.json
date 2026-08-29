@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.smartreferral.app",
-        "sha256_cert_fingerprints": ["A1:86:0A:16:2F:AD:FC:FB:9C:B9:71:28:77:A2:86:25:A5:66:DB:95:D9:5F:1D:56:E7:FA:FE:CC:FA:0E:A1:55"]
-      }
-    }]
