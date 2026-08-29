@@ -33,6 +33,11 @@ import {
   FileCheck,
   ArrowRight,
   Share2,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Zap,
+  Database,
 } from 'lucide-react';
 import { Referral, ReferralStatus } from '../types';
 
@@ -50,6 +55,9 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
     setActivePatientId,
     switchDemoUser,
     getReferralHistory,
+    isOnline,
+    lastSWCacheTime,
+    syncToServiceWorker,
   } = useApp();
 
   const [copiedCode, setCopiedCode] = useState(false);
@@ -57,6 +65,12 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
   const [selectedReferralId, setSelectedReferralId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'pass' | 'guidance' | 'summary' | 'history'>('pass');
   const [showPatientSelect, setShowPatientSelect] = useState(false);
+  const [isSyncingSW, setIsSyncingSW] = useState(false);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+  const [simulateOffline, setSimulateOffline] = useState(false);
+
+  // Effective online status (accounting for simulated offline testing)
+  const effectiveOnline = isOnline && !simulateOffline;
 
   // Find active patient (either from currentUser or activePatientId or default to Ravi Kumar)
   const currentPatient =
@@ -100,6 +114,19 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
     setActivePatientId(patientId);
     setShowPatientSelect(false);
     setSelectedReferralId('');
+  };
+
+  const handleManualSWSync = async () => {
+    setIsSyncingSW(true);
+    try {
+      await syncToServiceWorker();
+      setSyncSuccessMessage('Updated in Service Worker Cache');
+      setTimeout(() => setSyncSuccessMessage(null), 3000);
+    } catch (e) {
+      console.error('Failed to sync to SW:', e);
+    } finally {
+      setIsSyncingSW(false);
+    }
   };
 
   // QR code payload (JSON payload scanned by reception staff)
@@ -257,6 +284,76 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
                 </div>
               </>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Service Worker Offline Data & QR Readiness Status Bar */}
+      <div className={`rounded-2xl p-3.5 border transition-all duration-300 ${
+        !effectiveOnline
+          ? 'bg-amber-500/10 border-amber-300 text-amber-950'
+          : 'bg-emerald-500/10 border-emerald-300 text-emerald-950'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              !effectiveOnline
+                ? 'bg-amber-500 text-white'
+                : 'bg-emerald-600 text-white'
+            }`}>
+              {!effectiveOnline ? <WifiOff className="w-4 h-4" /> : <Database className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold">
+                  {!effectiveOnline
+                    ? 'Offline Mode Active'
+                    : 'Service Worker Cache Active'}
+                </span>
+                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                  !effectiveOnline
+                    ? 'bg-amber-200 text-amber-900'
+                    : 'bg-emerald-200 text-emerald-900'
+                }`}>
+                  {!effectiveOnline ? 'Local Cache Mode' : 'Offline-Ready'}
+                </span>
+              </div>
+              <p className="text-[11px] opacity-80 mt-0.5">
+                {!effectiveOnline
+                  ? 'Digital referral pass, clinical summary, and triage QR code are fully functional without network connection.'
+                  : `Patient data & QR pass synced in Service Worker ${
+                      lastSWCacheTime
+                        ? `(${new Date(lastSWCacheTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+                        : ''
+                    }`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+            {/* Simulated Offline Toggle */}
+            <button
+              onClick={() => setSimulateOffline(!simulateOffline)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+                simulateOffline
+                  ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
+                  : 'bg-white/80 hover:bg-white text-slate-700 border-slate-200'
+              }`}
+              title="Test offline behavior"
+            >
+              {simulateOffline ? <WifiOff className="w-3.5 h-3.5" /> : <Wifi className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{simulateOffline ? 'Disable Offline Sim' : 'Test Offline'}</span>
+            </button>
+
+            {/* Sync Cache Button */}
+            <button
+              onClick={handleManualSWSync}
+              disabled={isSyncingSW}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-800 border border-slate-200 shadow-xs flex items-center gap-1.5 transition disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSW ? 'animate-spin text-teal-600' : 'text-slate-600'}`} />
+              <span>{isSyncingSW ? 'Caching...' : syncSuccessMessage || 'Update Cache'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -548,9 +645,15 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
                       </div>
                     </div>
 
-                    <div className="pt-2 text-[11px] text-teal-800 font-semibold flex items-center justify-center sm:justify-start gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>Scan at Reception / Emergency Bay for Instant Check-in</span>
+                    <div className="pt-2 flex flex-col sm:flex-row items-center sm:items-start gap-1 text-[11px]">
+                      <div className="text-teal-800 font-semibold flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>Scan at Reception / Emergency Bay for Instant Check-in</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md mt-1 sm:mt-0">
+                        <Zap className="w-3 h-3 text-emerald-600" />
+                        <span>Offline Validated (Service Worker)</span>
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import {
   SEED_FACILITIES,
   SEED_FACILITY_SERVICES,
@@ -18,6 +18,11 @@ import {
   UserProfile,
   UserRole,
 } from '../types';
+import {
+  savePatientDataToSWCache,
+  loadPatientDataFromSWCache,
+  getLastSWCacheTime,
+} from '../utils/serviceWorkerSync';
 
 interface AppContextType {
   currentUser: UserProfile | null;
@@ -28,6 +33,11 @@ interface AppContextType {
   statusHistory: ReferralStatusHistory[];
   activePatientId: string;
   setActivePatientId: (id: string) => void;
+  
+  // Offline & Service Worker Sync
+  isOnline: boolean;
+  lastSWCacheTime: string | null;
+  syncToServiceWorker: () => Promise<boolean>;
   
   // Auth
   login: (email: string, role: UserRole, patientId?: string) => boolean;
@@ -76,6 +86,43 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY_PREFIX = 'smart_referral_';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Online state
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  });
+
+  const [lastSWCacheTime, setLastSWCacheTime] = useState<string | null>(() => {
+    return getLastSWCacheTime();
+  });
+
+  // Track network status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Listen for Service Worker confirmation messages
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'PATIENT_DATA_CACHED_CONFIRMATION') {
+        setLastSWCacheTime(event.data.timestamp);
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+      }
+    };
+  }, []);
+
   // Initialize state from localStorage or seed
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}user`);
@@ -112,7 +159,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved || 'pat-01'; // Default to Ravi Kumar (pat-01)
   });
 
-  // Save to localStorage on state changes
+  // Function to explicitly sync patient referral data to Service Worker Cache
+  const syncToServiceWorker = useCallback(async (): Promise<boolean> => {
+    const success = await savePatientDataToSWCache({
+      patients,
+      referrals,
+      facilities,
+      statusHistory,
+      activePatientId,
+    });
+    if (success) {
+      setLastSWCacheTime(new Date().toISOString());
+    }
+    return success;
+  }, [patients, referrals, facilities, statusHistory, activePatientId]);
+
+  // Attempt offline recovery on startup if local state is empty
+  useEffect(() => {
+    const recoverFromSW = async () => {
+      const savedPatients = localStorage.getItem(`${STORAGE_KEY_PREFIX}patients`);
+      if (!savedPatients) {
+        const swData = await loadPatientDataFromSWCache();
+        if (swData && swData.patients && swData.patients.length > 0) {
+          setPatients(swData.patients);
+          if (swData.referrals) setReferrals(swData.referrals);
+          if (swData.facilities) setFacilities(swData.facilities);
+          if (swData.statusHistory) setStatusHistory(swData.statusHistory);
+          if (swData.activePatientId) setActivePatientId(swData.activePatientId);
+          setLastSWCacheTime(swData.lastUpdated);
+        }
+      }
+    };
+    recoverFromSW();
+  }, []);
+
+  // Save to localStorage on state changes and sync to Service Worker
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(`${STORAGE_KEY_PREFIX}user`, JSON.stringify(currentUser));
@@ -144,6 +225,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY_PREFIX}history`, JSON.stringify(statusHistory));
   }, [statusHistory]);
+
+  // Automatically update Service Worker offline cache whenever patient or referral data changes
+  useEffect(() => {
+    syncToServiceWorker();
+  }, [patients, referrals, facilities, statusHistory, activePatientId, syncToServiceWorker]);
 
   const login = (email: string, role: UserRole, patientId?: string): boolean => {
     if (role === 'patient') {
@@ -454,6 +540,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         statusHistory,
         activePatientId,
         setActivePatientId,
+        isOnline,
+        lastSWCacheTime,
+        syncToServiceWorker,
         login,
         switchDemoUser,
         logout,
