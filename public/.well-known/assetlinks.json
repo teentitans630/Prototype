@@ -1,14 +1,12 @@
 [
   {
-    "relation": [
-      "delegate_permission/common.handle_all_urls"
-    ],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.smartreferral.app",
-      "sha256_cert_fingerprints": [
-        "56:C3:95:D8:07:22:6D:BB:6A:31:59:9B:B4:BF:81:0D:BF:F4:BC:CF:63:6A:E2:78:4E:62:90:63:D9:2E:CF:F0"
-      ]
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.smartreferral.app",
+        "sha256_cert_fingerprints": ["0D:AB:E8:9C:75:C8:1E:AA:30:74:DF:F9:9A:92:60:FA:36:92:12:0C:32:E0:90:F9:10:3F:4E:7B:44:22:BE:F9"]
+      }
     }
-  }
 ]
