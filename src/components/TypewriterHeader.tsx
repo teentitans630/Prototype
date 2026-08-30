@@ -69,23 +69,13 @@ export const TypewriterHeader: React.FC<TypewriterHeaderProps> = ({
   }, [currentText, isDeleting, phraseIndex, phrases, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <div className="w-full mb-5 text-center">
-      {/* Dynamic Animated Typing Box */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50/90 border border-teal-200/80 shadow-xs mb-2">
-        <span className="flex h-2 w-2 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-600"></span>
-        </span>
-        <span className="text-[11px] font-bold tracking-wide uppercase text-teal-900">
-          Smart Referral Feature Showcase
-        </span>
-      </div>
-
-      <div className="h-14 flex items-center justify-center px-4 py-1.5 rounded-2xl bg-slate-900 text-white shadow-md border border-slate-800">
-        <p className="text-sm sm:text-base font-semibold tracking-tight text-teal-200 flex items-center justify-center gap-1.5 flex-wrap">
-          <span className="text-white font-normal">{currentText}</span>
+    <div className="w-full mb-4 text-center">
+      {/* Clean blended typing text with high contrast */}
+      <div className="min-h-[32px] flex items-center justify-center px-3 py-1">
+        <p className="text-xs sm:text-sm font-semibold tracking-tight text-slate-700 flex items-center justify-center gap-1 flex-wrap">
+          <span className="text-slate-900 font-bold">{currentText}</span>
           <span
-            className={`inline-block w-0.5 h-4 sm:h-5 bg-teal-400 transition-opacity duration-100 ${
+            className={`inline-block w-0.5 h-4 bg-teal-600 transition-opacity duration-100 ${
               cursorVisible ? 'opacity-100' : 'opacity-0'
             }`}
           />

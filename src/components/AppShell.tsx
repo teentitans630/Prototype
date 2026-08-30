@@ -78,16 +78,16 @@ export const AppShell: React.FC<AppShellProps> = ({
   const isPatientRole = currentUser?.role === 'patient';
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-start text-slate-900 pb-20 md:pb-6">
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-start text-slate-900 pb-20 md:pb-6 w-full max-w-full overflow-x-hidden box-border">
       {/* Mobile container wrapper to ensure mobile-first 390px perfection and wide desktop responsive presentation */}
-      <div className="w-full max-w-md md:max-w-4xl lg:max-w-5xl bg-white min-h-screen shadow-xl flex flex-col md:border-x md:border-slate-200">
+      <div className="w-full max-w-md md:max-w-4xl lg:max-w-5xl bg-white min-h-screen shadow-xl flex flex-col md:border-x md:border-slate-200 overflow-x-hidden box-border">
         
-        {/* Top Header Bar */}
-        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3">
-          <div className="flex items-center justify-between gap-2">
+        {/* Top Header Bar (Flexbox layout with strict no-overflow boundaries) */}
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 px-3 sm:px-4 py-2.5 w-full box-border">
+          <div className="flex items-center justify-between gap-2 w-full min-w-0">
             {/* App Logo & Title */}
             <div
-              className="flex items-center gap-2.5 cursor-pointer select-none"
+              className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer select-none"
               onClick={() => {
                 if (currentUser?.role === 'phc_doctor') onNavigate('phc_dashboard');
                 else if (currentUser?.role === 'hospital_staff') onNavigate('hospital_dashboard');
@@ -95,7 +95,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 else onNavigate('admin_dashboard');
               }}
             >
-              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-teal-100 bg-white p-0.5 shrink-0 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shadow-xs border border-teal-100 bg-white p-0.5 shrink-0 flex items-center justify-center">
                 <img
                   src="/icon-192.png"
                   alt="Smart Referral Icon"
@@ -107,43 +107,43 @@ export const AppShell: React.FC<AppShellProps> = ({
                   }}
                 />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-bold tracking-tight text-slate-900 leading-none">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <h1 className="text-xs sm:text-sm font-bold tracking-tight text-slate-900 leading-none truncate">
                     Smart Referral
                   </h1>
-                  <span className={`text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded border ${
+                  <span className={`text-[9px] sm:text-[10px] uppercase font-black px-1.5 py-0.5 rounded border shrink-0 ${
                     isPatientRole
                       ? 'bg-amber-100 text-amber-900 border-amber-300'
                       : 'bg-teal-100 text-teal-800 border-teal-200'
                   }`}>
-                    {isPatientRole ? 'Patient Pass' : 'PWA'}
+                    {isPatientRole ? 'Patient' : 'PWA'}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium leading-none mt-1 truncate max-w-[140px] sm:max-w-xs">
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-none mt-0.5 truncate max-w-[120px] sm:max-w-[200px]">
                   {isPatientRole
-                    ? 'Patient View (My Referrals)'
+                    ? 'Patient Digital Pass'
                     : currentUser?.role === 'phc_doctor'
-                    ? 'Doctor View (PHC Hub)'
+                    ? 'Doctor PHC Hub'
                     : currentUser?.facility_name || 'Tele-Triage Grid'}
                 </p>
               </div>
             </div>
 
-            {/* User Profile Badge & Logout (Strict Role Isolation) */}
-            <div className="flex items-center gap-2">
+            {/* User Profile Badge & Logout (Responsive, shrink-0, zero overflow) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <div
-                className={`flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-xs font-semibold ${
                   isPatientRole
                     ? 'bg-amber-50 border-amber-200 text-amber-900'
                     : 'bg-slate-100 border-slate-200 text-slate-700'
                 }`}
               >
                 <RoleIcon className={`w-3.5 h-3.5 shrink-0 ${isPatientRole ? 'text-amber-600' : 'text-teal-600'}`} />
-                <span className="hidden sm:inline truncate max-w-[120px]">
+                <span className="hidden sm:inline truncate max-w-[110px]">
                   {currentUser?.name || 'User'}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-white/80 border border-slate-200/80">
+                <span className="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-white/90 border border-slate-200/80">
                   {roleConfig?.tag}
                 </span>
               </div>
@@ -151,21 +151,21 @@ export const AppShell: React.FC<AppShellProps> = ({
               {/* Quick Reset State Button */}
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition shrink-0"
                 title="Reset Demo Data"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
 
-              {/* Logout Button */}
+              {/* Logout Button (Fully visible on all mobile screen widths) */}
               <button
                 id="btn-logout"
                 onClick={logout}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-full transition active:scale-95 shadow-sm"
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-full transition active:scale-95 shadow-xs shrink-0 whitespace-nowrap"
                 title="Logout"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                <span className="hidden sm:inline">Log Out</span>
+                <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="inline text-[11px] sm:text-xs">Log Out</span>
               </button>
             </div>
           </div>

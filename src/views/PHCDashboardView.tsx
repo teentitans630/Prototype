@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { PatientScanner } from '../components/PatientScanner';
 import { Patient } from '../types';
 import {
   Send,
@@ -17,7 +18,6 @@ import {
   TrendingUp,
   Activity,
   QrCode,
-  Camera,
   User,
   Heart,
   Save,
@@ -264,150 +264,15 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
       </div>
 
       {/* SECTION 1: QR & CODE SCANNER WORKSPACE */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <div>
-            <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-teal-700" />
-              <span>Patient QR & Code Scanner</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Scan digital pass or enter unique patient code to view and modify medical records
-            </p>
-          </div>
-
-          {/* Scanner Mode Toggle */}
-          <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto">
-            <button
-              type="button"
-              id="btn-mode-code"
-              onClick={() => setScannerMode('code')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                scannerMode === 'code'
-                  ? 'bg-white text-teal-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Enter Code / ID
-            </button>
-            <button
-              type="button"
-              id="btn-mode-camera"
-              onClick={() => setScannerMode('camera')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
-                scannerMode === 'camera'
-                  ? 'bg-white text-teal-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5 text-teal-600" />
-              <span>Live QR Scanner</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Camera Scanner View */}
-        {scannerMode === 'camera' ? (
-          <div className="p-4 rounded-2xl bg-slate-950 text-white flex flex-col items-center justify-center text-center relative overflow-hidden border border-slate-800">
-            <div className="w-56 h-56 rounded-2xl border-2 border-teal-400/80 relative flex items-center justify-center bg-slate-900/90 shadow-inner overflow-hidden mb-3">
-              {/* Animated scanning bar */}
-              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-pulse top-1/2 -translate-y-1/2 shadow-[0_0_15px_#2dd4bf]" />
-              <QrCode className="w-24 h-24 text-teal-400/40" />
-              {isScanning && (
-                <div className="absolute inset-0 bg-teal-900/80 flex flex-col items-center justify-center text-xs font-bold text-teal-200">
-                  <RefreshCw className="w-6 h-6 animate-spin mb-1 text-teal-300" />
-                  <span>Decoding Patient Pass...</span>
-                </div>
-              )}
-            </div>
-
-            <p className="text-xs text-slate-300 font-medium mb-3">
-              Point camera at patient's mobile QR pass or test by scanning active patients:
-            </p>
-
-            {/* Quick QR Simulation Pills */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-md">
-              {patients.slice(0, 4).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  id={`btn-scan-sim-${p.id}`}
-                  onClick={() => handleSimulateScan(p)}
-                  disabled={isScanning}
-                  className="px-3 py-1.5 rounded-xl bg-teal-900/60 hover:bg-teal-800 text-teal-200 border border-teal-700/60 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
-                >
-                  <QrCode className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Scan {p.name.split(' ')[0]} ({p.patient_code})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* Manual Code Entry & Search */
-          <div className="space-y-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleFetchPatient();
-              }}
-              className="flex gap-2"
-            >
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  id="input-doctor-patient-code"
-                  value={patientInputCode}
-                  onChange={(e) => setPatientInputCode(e.target.value)}
-                  placeholder="Enter Code (PAT-000245), Phone, or Patient Name..."
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-medium"
-                />
-              </div>
-              <button
-                type="submit"
-                id="btn-fetch-patient"
-                className="px-5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs sm:text-sm transition flex items-center gap-1.5 shrink-0 shadow-sm"
-              >
-                <Search className="w-4 h-4" />
-                <span>Fetch Record</span>
-              </button>
-            </form>
-
-            {searchError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{searchError}</span>
-              </div>
-            )}
-
-            {/* Quick Patient Select Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">
-                Quick Patients:
-              </span>
-              {patients.slice(0, 5).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  id={`pill-patient-${p.id}`}
-                  onClick={() => {
-                    setPatientInputCode(p.patient_code);
-                    handleFetchPatient(p.patient_code);
-                  }}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold border transition shrink-0 flex items-center gap-1 ${
-                    selectedPatient?.id === p.id
-                      ? 'bg-teal-50 border-teal-500 text-teal-900 font-bold shadow-xs'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <User className="w-3 h-3 text-teal-600" />
-                  <span>{p.name} ({p.patient_code})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      <PatientScanner
+        mode="doctor_patient_lookup"
+        patients={patients}
+        onPatientScanned={(code) => {
+          handleFetchPatient(code);
+        }}
+        title="Doctor QR Scanner & Patient EHR Lookup"
+        subtitle="Scan digital QR pass or enter patient ID to fetch medical history & vitals for triage"
+      />
 
       {/* SECTION 2: COMPREHENSIVE MEDICAL REPORT & MODIFICATION FORM */}
       {selectedPatient ? (

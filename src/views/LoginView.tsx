@@ -131,12 +131,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900/5 bg-[radial-gradient(#0d9488_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center p-3 sm:p-6">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 p-5 sm:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-100 to-teal-50/40 flex flex-col items-center justify-center p-3 sm:p-6 w-full max-w-full overflow-x-hidden box-border">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-200 p-5 sm:p-8 relative overflow-hidden">
         
         {/* Top App Identity */}
-        <div className="flex flex-col items-center text-center mb-4">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-teal-700/20 mb-2.5 border border-teal-100 bg-white p-1 flex items-center justify-center">
+        <div className="flex flex-col items-center text-center mb-3">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md shadow-teal-700/10 mb-2 border border-teal-100 bg-white p-1 flex items-center justify-center">
             <img
               src="/icon-192.png"
               alt="Smart Referral App Icon"
@@ -155,7 +155,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </p>
         </div>
 
-        {/* Dynamic Typing Animation UI */}
+        {/* Dynamic Typing Animation UI (Blended directly into background) */}
         <TypewriterHeader />
 
         {/* Tab Toggle: Sign In vs Patient Self-Registration */}
@@ -187,180 +187,204 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </button>
         </div>
 
-        {/* TAB 1: SIGN IN FORM */}
+        {/* TAB 1: SIGN IN FORM WITH VISUAL ROLE CARDS */}
         {activeTab === 'signin' && (
           <div className="space-y-4">
-            {/* Quick 1-Tap Demo Shortcuts */}
+            {/* Visual Role Cards Selector */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>One-Tap Role Login</span>
+                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                  1. Select Your Role
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium">Any password works</span>
+                <span className="text-[11px] text-slate-400 font-medium">Click a box to select</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {/* Patient */}
-                <button
-                  type="button"
-                  id="btn-quick-patient"
-                  onClick={() => handleQuickDemoLogin('patient', 'patient@demo.com')}
-                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border-2 border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-left transition active:scale-[0.98]"
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Patient Role Card */}
+                <div
+                  id="card-role-patient"
+                  onClick={() => {
+                    setSelectedRole('patient');
+                    if (
+                      usernameOrEmail === 'doctor@demo.com' ||
+                      usernameOrEmail === 'hospital@demo.com' ||
+                      usernameOrEmail === 'admin@demo.com'
+                    ) {
+                      setUsernameOrEmail('patient@demo.com');
+                    }
+                  }}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between select-none ${
+                    selectedRole === 'patient'
+                      ? 'border-amber-500 bg-amber-50/70 shadow-sm ring-2 ring-amber-400/20'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
-                    <QrCode className="w-4 h-4" />
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                        selectedRole === 'patient'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      <User className="w-5 h-5" />
+                    </div>
+                    {selectedRole === 'patient' && (
+                      <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">Patient</div>
-                    <div className="text-[10px] text-amber-900 font-semibold truncate">Ravi Kumar (QR Pass)</div>
+                  <div className="mt-2.5">
+                    <div className="text-sm font-extrabold text-slate-900">Patient</div>
+                    <div className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                      Digital QR pass & referral history
+                    </div>
                   </div>
-                </button>
+                </div>
 
-                {/* Doctor */}
-                <button
-                  type="button"
-                  id="btn-quick-doctor"
-                  onClick={() => handleQuickDemoLogin('phc_doctor', 'doctor@demo.com')}
-                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-left transition active:scale-[0.98]"
+                {/* Doctor Role Card */}
+                <div
+                  id="card-role-doctor"
+                  onClick={() => {
+                    setSelectedRole('phc_doctor');
+                    if (
+                      usernameOrEmail === 'patient@demo.com' ||
+                      usernameOrEmail === 'hospital@demo.com' ||
+                      usernameOrEmail === 'admin@demo.com'
+                    ) {
+                      setUsernameOrEmail('doctor@demo.com');
+                    }
+                  }}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between select-none ${
+                    selectedRole === 'phc_doctor'
+                      ? 'border-emerald-500 bg-emerald-50/70 shadow-sm ring-2 ring-emerald-400/20'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <Stethoscope className="w-4 h-4" />
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                        selectedRole === 'phc_doctor'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      <Stethoscope className="w-5 h-5" />
+                    </div>
+                    {selectedRole === 'phc_doctor' && (
+                      <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">Doctor</div>
-                    <div className="text-[10px] text-emerald-800 font-semibold truncate">Dr. Anjali Rao</div>
+                  <div className="mt-2.5">
+                    <div className="text-sm font-extrabold text-slate-900">PHC Doctor</div>
+                    <div className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                      Triage, vitals & smart matching
+                    </div>
                   </div>
-                </button>
+                </div>
 
-                {/* Hospital Desk */}
-                <button
-                  type="button"
-                  id="btn-quick-hospital"
-                  onClick={() => handleQuickDemoLogin('hospital_staff', 'hospital@demo.com')}
-                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-left transition active:scale-[0.98]"
+                {/* Hospital Staff Role Card */}
+                <div
+                  id="card-role-hospital"
+                  onClick={() => {
+                    setSelectedRole('hospital_staff');
+                    if (
+                      usernameOrEmail === 'patient@demo.com' ||
+                      usernameOrEmail === 'doctor@demo.com' ||
+                      usernameOrEmail === 'admin@demo.com'
+                    ) {
+                      setUsernameOrEmail('hospital@demo.com');
+                    }
+                  }}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between select-none ${
+                    selectedRole === 'hospital_staff'
+                      ? 'border-blue-500 bg-blue-50/70 shadow-sm ring-2 ring-blue-400/20'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-                    <Building className="w-4 h-4" />
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                        selectedRole === 'hospital_staff'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      <Building className="w-5 h-5" />
+                    </div>
+                    {selectedRole === 'hospital_staff' && (
+                      <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">Hospital</div>
-                    <div className="text-[10px] text-blue-800 font-semibold truncate">District Hospital Desk</div>
+                  <div className="mt-2.5">
+                    <div className="text-sm font-extrabold text-slate-900">Hospital Staff</div>
+                    <div className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                      Pass scanner & ward admission
+                    </div>
                   </div>
-                </button>
+                </div>
 
-                {/* Admin */}
-                <button
-                  type="button"
-                  id="btn-quick-admin"
-                  onClick={() => handleQuickDemoLogin('admin', 'admin@demo.com')}
-                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-left transition active:scale-[0.98]"
+                {/* Admin Role Card */}
+                <div
+                  id="card-role-admin"
+                  onClick={() => {
+                    setSelectedRole('admin');
+                    if (
+                      usernameOrEmail === 'patient@demo.com' ||
+                      usernameOrEmail === 'doctor@demo.com' ||
+                      usernameOrEmail === 'hospital@demo.com'
+                    ) {
+                      setUsernameOrEmail('admin@demo.com');
+                    }
+                  }}
+                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all duration-150 flex flex-col justify-between select-none ${
+                    selectedRole === 'admin'
+                      ? 'border-purple-500 bg-purple-50/70 shadow-sm ring-2 ring-purple-400/20'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                        selectedRole === 'admin'
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-purple-100 text-purple-800'
+                      }`}
+                    >
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    {selectedRole === 'admin' && (
+                      <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </span>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">Administrator</div>
-                    <div className="text-[10px] text-purple-800 font-semibold truncate">System Command</div>
+                  <div className="mt-2.5">
+                    <div className="text-sm font-extrabold text-slate-900">State Command</div>
+                    <div className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                      Grid capacity & analytics
+                    </div>
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="relative my-3">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
+            {/* Credentials Input Form */}
+            <form onSubmit={handleSignIn} className="space-y-3 pt-2 border-t border-slate-100">
+              <div className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2">
+                2. Enter Credentials
               </div>
-              <div className="relative flex justify-center text-[11px] uppercase">
-                <span className="bg-white px-2 text-slate-400 font-semibold">Or Enter Custom Credentials</span>
-              </div>
-            </div>
 
-            {/* Manual Mock Login Form */}
-            <form onSubmit={handleSignIn} className="space-y-3">
               {loginError && (
                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
                   {loginError}
                 </div>
               )}
-
-              {/* 4 Role Selector Buttons */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Select Role to Access
-                </label>
-                <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
-                  <button
-                    type="button"
-                    id="role-select-patient"
-                    onClick={() => {
-                      setSelectedRole('patient');
-                      if (usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'hospital@demo.com' || usernameOrEmail === 'admin@demo.com') {
-                        setUsernameOrEmail('patient@demo.com');
-                      }
-                    }}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                      selectedRole === 'patient'
-                        ? 'bg-amber-500 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Patient
-                  </button>
-                  <button
-                    type="button"
-                    id="role-select-doctor"
-                    onClick={() => {
-                      setSelectedRole('phc_doctor');
-                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'hospital@demo.com' || usernameOrEmail === 'admin@demo.com') {
-                        setUsernameOrEmail('doctor@demo.com');
-                      }
-                    }}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                      selectedRole === 'phc_doctor'
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Doctor
-                  </button>
-                  <button
-                    type="button"
-                    id="role-select-hospital"
-                    onClick={() => {
-                      setSelectedRole('hospital_staff');
-                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'admin@demo.com') {
-                        setUsernameOrEmail('hospital@demo.com');
-                      }
-                    }}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                      selectedRole === 'hospital_staff'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Hospital
-                  </button>
-                  <button
-                    type="button"
-                    id="role-select-admin"
-                    onClick={() => {
-                      setSelectedRole('admin');
-                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'hospital@demo.com') {
-                        setUsernameOrEmail('admin@demo.com');
-                      }
-                    }}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                      selectedRole === 'admin'
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Admin
-                  </button>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -373,8 +397,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     id="input-login-username"
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    placeholder="Enter any username or email (e.g. dr_rao, patient_ravi)"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="e.g. dr_rao, patient@demo.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-medium"
                     required
                   />
                 </div>
@@ -392,12 +416,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Any password combination accepted"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-medium"
                     required
                   />
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  💡 Prototype Mode: Any random password and username will successfully log in.
+                  💡 Prototype Mode: Any password and username combination will log in.
                 </p>
               </div>
 
@@ -406,7 +430,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 id="btn-submit-login"
                 className="w-full py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-md shadow-teal-700/20 transition active:scale-[0.98] mt-2 flex items-center justify-center gap-2"
               >
-                <span>Sign In as {selectedRole === 'phc_doctor' ? 'Doctor' : selectedRole === 'hospital_staff' ? 'Hospital' : selectedRole === 'patient' ? 'Patient' : 'Administrator'}</span>
+                <span>
+                  Sign In as{' '}
+                  {selectedRole === 'phc_doctor'
+                    ? 'PHC Doctor'
+                    : selectedRole === 'hospital_staff'
+                    ? 'Hospital Staff'
+                    : selectedRole === 'patient'
+                    ? 'Patient'
+                    : 'Administrator'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
