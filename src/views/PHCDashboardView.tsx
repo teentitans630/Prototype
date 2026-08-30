@@ -88,6 +88,28 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
   ).length;
   const completedCount = myReferrals.filter((r) => r.status === 'completed').length;
 
+  // Audio chime feedback for scanner
+  const playScanBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch {
+      // Ignore audio constraints
+    }
+  };
+
   // Search / Fetch Patient by ID or Code
   const handleFetchPatient = (codeQuery?: string) => {
     setSearchError('');
@@ -108,6 +130,7 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
     );
 
     if (found) {
+      playScanBeep();
       setSelectedPatient(found);
       setMedicalForm({
         diagnosis: found.medical_history || 'Acute Coronary Syndrome (STEMI)',
@@ -115,10 +138,10 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
         medications: found.medications || 'Aspirin 325mg, Atorvastatin 40mg',
         allergies: found.allergies || 'None known',
         chronic_conditions: found.chronic_conditions || found.medical_history || 'None recorded',
-        blood_pressure: found.recent_vitals?.blood_pressure || '130/85 mmHg',
-        heart_rate: found.recent_vitals?.heart_rate || '88 bpm',
+        blood_pressure: found.recent_vitals?.blood_pressure || found.recent_vitals?.bp || '130/85 mmHg',
+        heart_rate: found.recent_vitals?.heart_rate || found.recent_vitals?.hr || '88 bpm',
         spo2: found.recent_vitals?.spo2 || '97%',
-        temperature: found.recent_vitals?.temperature || '98.4°F',
+        temperature: found.recent_vitals?.temperature || found.recent_vitals?.temp || '98.4°F',
         chief_complaint: 'Clinical evaluation & triage request',
         icd10_code: 'R69 - Illness, unspecified',
       });
@@ -132,6 +155,7 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
   const handleSimulateScan = (scannedPatient: Patient) => {
     setIsScanning(true);
     setTimeout(() => {
+      playScanBeep();
       setIsScanning(false);
       setSelectedPatient(scannedPatient);
       setPatientInputCode(scannedPatient.patient_code);
@@ -141,15 +165,15 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
         medications: scannedPatient.medications || 'Standard medication protocol',
         allergies: scannedPatient.allergies || 'None known',
         chronic_conditions: scannedPatient.chronic_conditions || scannedPatient.medical_history || 'None',
-        blood_pressure: scannedPatient.recent_vitals?.bp || '135/88 mmHg',
-        heart_rate: scannedPatient.recent_vitals?.hr || '90 bpm',
+        blood_pressure: scannedPatient.recent_vitals?.blood_pressure || scannedPatient.recent_vitals?.bp || '135/88 mmHg',
+        heart_rate: scannedPatient.recent_vitals?.heart_rate || scannedPatient.recent_vitals?.hr || '90 bpm',
         spo2: scannedPatient.recent_vitals?.spo2 || '96%',
-        temperature: scannedPatient.recent_vitals?.temp || '98.6°F',
+        temperature: scannedPatient.recent_vitals?.temperature || scannedPatient.recent_vitals?.temp || '98.6°F',
         chief_complaint: 'Emergency medical assessment',
         icd10_code: 'Z00.0 - General medical examination',
       });
       setScannerMode('code');
-    }, 900);
+    }, 700);
   };
 
   // Save Doctor Modifications & Notes

@@ -1319,7 +1319,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
 
             <div className="pt-2">
               <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
-                Hospital Scanner Mode
+                Patient Digital Referral Pass
               </span>
               <h3 className="text-lg font-extrabold text-slate-900 mt-2">
                 {currentPatient?.name}
@@ -1341,13 +1341,13 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
 
             <div className="space-y-2">
               <p className="text-xs text-slate-600 font-medium">
-                Hold phone screen near hospital triage barcode / QR scanner at <strong>{destFacility?.name} (Emergency Gate 2)</strong>.
+                Present this QR code to the triage reception desk or scanning terminal at <strong>{destFacility?.name || 'the receiving hospital'}</strong>.
               </p>
               <button
                 onClick={() => setShowQrModal(false)}
                 className="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition"
               >
-                Done Scanning
+                Close Pass
               </button>
             </div>
           </div>

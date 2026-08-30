@@ -67,9 +67,12 @@ export interface Patient {
   chronic_conditions?: string;
   recent_vitals?: {
     bp?: string;
+    blood_pressure?: string;
     hr?: string;
+    heart_rate?: string;
     spo2?: string;
     temp?: string;
+    temperature?: string;
     resp?: string;
     updated_at?: string;
   };

@@ -24,6 +24,9 @@ import {
   Syringe,
   Filter,
   Check,
+  QrCode,
+  Camera,
+  ArrowRight,
 } from 'lucide-react';
 
 interface HospitalDashboardViewProps {
@@ -49,12 +52,88 @@ export const HospitalDashboardView: React.FC<HospitalDashboardViewProps> = ({
   const [inventoryCategoryFilter, setInventoryCategoryFilter] = useState<string>('all');
   const [restockNotice, setRestockNotice] = useState<string>('');
 
+  // Hospital Desk QR Scanner State
+  const [scannerMode, setScannerMode] = useState<'code' | 'camera'>('code');
+  const [inputPassCode, setInputPassCode] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannedReferral, setScannedReferral] = useState<any>(null);
+  const [scanMessage, setScanMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Audio confirmation chime
+  const playScanBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch {
+      // Ignore audio constraints
+    }
+  };
+
   // Scope to hospital facility
   const myFacilityId = currentUser?.facility_id || 'fac-dh-02';
   const myFacility = facilities.find((f) => f.id === myFacilityId);
   const hospitalReferrals = referrals.filter(
     (r) => r.destination_facility_id === myFacilityId || currentUser?.role === 'admin'
   );
+
+  // Search referral by scanned pass or entered code
+  const handleLookupPass = (codeQuery?: string) => {
+    setScanMessage(null);
+    const query = (codeQuery !== undefined ? codeQuery : inputPassCode).trim().toLowerCase();
+    if (!query) {
+      setScanMessage({ type: 'error', text: 'Please enter a Referral Code (REF-...) or Patient Code (PAT-...)' });
+      return;
+    }
+
+    const foundRef = referrals.find(
+      (r) =>
+        r.referral_code.toLowerCase() === query ||
+        r.patient?.patient_code.toLowerCase() === query ||
+        r.patient_id.toLowerCase() === query
+    );
+
+    if (foundRef) {
+      playScanBeep();
+      setScannedReferral(foundRef);
+      setScanMessage({
+        type: 'success',
+        text: `Pass verified for ${foundRef.patient?.name || 'Patient'} (${foundRef.referral_code})`,
+      });
+    } else {
+      setScannedReferral(null);
+      setScanMessage({
+        type: 'error',
+        text: `No matching active referral found for "${query}".`,
+      });
+    }
+  };
+
+  const handleSimulateHospitalScan = (ref: any) => {
+    setIsScanning(true);
+    setTimeout(() => {
+      playScanBeep();
+      setIsScanning(false);
+      setScannedReferral(ref);
+      setInputPassCode(ref.referral_code);
+      setScanMessage({
+        type: 'success',
+        text: `QR Pass scanned successfully for ${ref.patient?.name || 'Patient'}`,
+      });
+      setScannerMode('code');
+    }, 700);
+  };
 
   // Monitoring Metrics calculations
   const totalPatientsCount = patients.length;
@@ -156,6 +235,244 @@ export const HospitalDashboardView: React.FC<HospitalDashboardViewProps> = ({
             >
               Review Pending
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION: HOSPITAL TRIAGE QR SCANNER & INSTANT CHECK-IN */}
+      <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                <QrCode className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900">
+                Hospital Triage QR Scanner & Check-In Desk
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 ml-9">
+              Scan patient digital QR pass or enter referral code for instant arrival verification & admission
+            </p>
+          </div>
+
+          {/* Scanner Mode Toggle */}
+          <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto">
+            <button
+              type="button"
+              id="btn-hosp-mode-code"
+              onClick={() => setScannerMode('code')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
+                scannerMode === 'code'
+                  ? 'bg-white text-blue-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Code Entry
+            </button>
+            <button
+              type="button"
+              id="btn-hosp-mode-camera"
+              onClick={() => setScannerMode('camera')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+                scannerMode === 'camera'
+                  ? 'bg-white text-blue-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5 text-blue-600" />
+              <span>Live QR Scanner</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Live Camera Scanner View */}
+        {scannerMode === 'camera' ? (
+          <div className="p-4 rounded-2xl bg-slate-950 text-white flex flex-col items-center justify-center text-center relative overflow-hidden border border-slate-800">
+            <div className="w-52 h-52 rounded-2xl border-2 border-blue-400 relative flex items-center justify-center bg-slate-900 shadow-inner overflow-hidden mb-3">
+              {/* Laser sweep animation */}
+              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse top-1/2 -translate-y-1/2 shadow-[0_0_15px_#38bdf8]" />
+              <QrCode className="w-20 h-20 text-blue-400/30" />
+              {isScanning && (
+                <div className="absolute inset-0 bg-blue-950/80 flex flex-col items-center justify-center text-xs font-bold text-blue-200">
+                  <RefreshCw className="w-6 h-6 animate-spin mb-1 text-blue-300" />
+                  <span>Decoding Patient Pass...</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300 font-medium mb-3">
+              Hold the patient's phone screen or printed referral pass up to camera:
+            </p>
+
+            {/* Quick Test QR Scan Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-md">
+              {referrals.slice(0, 4).map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  id={`btn-hosp-scan-${r.id}`}
+                  onClick={() => handleSimulateHospitalScan(r)}
+                  disabled={isScanning}
+                  className="px-3 py-1.5 rounded-xl bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700/60 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Scan {r.patient?.name.split(' ')[0]} ({r.referral_code})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Manual Code Entry */
+          <div className="space-y-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLookupPass();
+              }}
+              className="flex gap-2"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  id="input-hosp-referral-code"
+                  value={inputPassCode}
+                  onChange={(e) => setInputPassCode(e.target.value)}
+                  placeholder="Enter Referral Code (e.g. REF-000101) or Patient ID..."
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                />
+              </div>
+              <button
+                type="submit"
+                id="btn-hosp-fetch-pass"
+                className="px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm transition flex items-center gap-1.5 shrink-0 shadow-sm"
+              >
+                <Search className="w-4 h-4" />
+                <span>Verify Pass</span>
+              </button>
+            </form>
+
+            {/* Quick Referral Select Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">
+                Active Passes:
+              </span>
+              {hospitalReferrals.slice(0, 5).map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  id={`pill-hosp-ref-${r.id}`}
+                  onClick={() => {
+                    setInputPassCode(r.referral_code);
+                    handleLookupPass(r.referral_code);
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold border transition shrink-0 flex items-center gap-1 ${
+                    scannedReferral?.id === r.id
+                      ? 'bg-blue-50 border-blue-500 text-blue-900 font-bold shadow-xs'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <User className="w-3 h-3 text-blue-600" />
+                  <span>{r.patient?.name || 'Patient'} ({r.referral_code})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scan / Lookup Notification Alert */}
+        {scanMessage && (
+          <div
+            className={`mt-3 p-3 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
+              scanMessage.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {scanMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span>{scanMessage.text}</span>
+          </div>
+        )}
+
+        {/* Verified Referral Card with Quick Actions */}
+        {scannedReferral && (
+          <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-slate-50 to-blue-50/50 border-2 border-blue-300 shadow-sm animate-in fade-in-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-mono text-xs font-extrabold text-blue-900 bg-white px-2 py-0.5 rounded-md border border-blue-200">
+                    {scannedReferral.referral_code}
+                  </span>
+                  <PriorityBadge priority={scannedReferral.priority} />
+                  <StatusBadge status={scannedReferral.status} />
+                </div>
+                <h4 className="text-base font-black text-slate-900">
+                  {scannedReferral.patient?.name} • {scannedReferral.diagnosis}
+                </h4>
+                <p className="text-xs text-slate-600 mt-1">
+                  Age: {scannedReferral.patient?.age}y ({scannedReferral.patient?.gender}) • Phone: {scannedReferral.patient?.phone} • BP: {scannedReferral.blood_pressure || '120/80'} • SpO2: {scannedReferral.spo2 || '98%'}
+                </p>
+              </div>
+
+              {/* Instant Check-in / Admission Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {scannedReferral.status === 'pending' && (
+                  <button
+                    type="button"
+                    id="btn-scan-accept"
+                    onClick={() => {
+                      acceptReferral(scannedReferral.id, 'Pass scanned & accepted at Hospital Triage Desk.');
+                      handleLookupPass(scannedReferral.referral_code);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
+                  >
+                    Accept Referral
+                  </button>
+                )}
+
+                {scannedReferral.status !== 'patient_arrived' && scannedReferral.status !== 'under_treatment' && scannedReferral.status !== 'completed' && (
+                  <button
+                    type="button"
+                    id="btn-scan-checkin"
+                    onClick={() => {
+                      advanceReferralStatus(scannedReferral.id, 'patient_arrived', 'Patient scanned at hospital entrance & verified arrival.');
+                      handleLookupPass(scannedReferral.referral_code);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition"
+                  >
+                    Confirm Arrival
+                  </button>
+                )}
+
+                {scannedReferral.status !== 'under_treatment' && scannedReferral.status !== 'completed' && (
+                  <button
+                    type="button"
+                    id="btn-scan-admit"
+                    onClick={() => {
+                      advanceReferralStatus(scannedReferral.id, 'under_treatment', 'Patient admitted to emergency ward by triage staff.');
+                      handleLookupPass(scannedReferral.referral_code);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition"
+                  >
+                    Admit to Ward
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  id="btn-scan-view-file"
+                  onClick={() => onNavigate('referral_detail', { referralId: scannedReferral.id })}
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs transition"
+                >
+                  Open Full File
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
