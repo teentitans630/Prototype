@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
+import { TypewriterHeader } from '../components/TypewriterHeader';
 import {
-  HeartPulse,
   Lock,
   Mail,
   ShieldCheck,
@@ -13,6 +13,13 @@ import {
   CheckCircle2,
   User,
   QrCode,
+  UserPlus,
+  Phone,
+  Calendar,
+  MapPin,
+  Heart,
+  FileText,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface LoginViewProps {
@@ -20,288 +27,631 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
-  const { login } = useApp();
-  const [email, setEmail] = useState('patient@demo.com');
+  const { login, signupPatient, patients } = useApp();
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+
+  // Sign in state
+  const [usernameOrEmail, setUsernameOrEmail] = useState('patient@demo.com');
   const [password, setPassword] = useState('Demo@123');
   const [selectedRole, setSelectedRole] = useState<UserRole>('patient');
-  const [error, setError] = useState('');
+  const [loginError, setLoginError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Patient Self-Registration / Signup state
+  const [signupForm, setSignupForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    date_of_birth: '1995-06-15',
+    gender: 'Male' as 'Male' | 'Female' | 'Other',
+    blood_group: 'O+',
+    address: '',
+    emergency_contact: '',
+    emergency_relation: 'Spouse',
+    allergies: 'None known',
+    medical_history: '',
+    password: '',
+  });
+  const [signupError, setSignupError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Mock Login Handler (accepts ANY random username & password)
+  const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setError('Please enter an email address');
+    setLoginError('');
+
+    if (!usernameOrEmail.trim()) {
+      setLoginError('Please enter a username or email address');
       return;
     }
-    const success = login(email, selectedRole);
+
+    // Bypass strict credential validation for prototype
+    const success = login(usernameOrEmail, selectedRole);
     if (success) {
       onLoginSuccess(selectedRole);
     } else {
-      setError('Invalid credentials');
+      setLoginError('Could not authenticate. Please try again.');
     }
   };
 
+  // Quick One-Tap Demo Login
   const handleQuickDemoLogin = (demoRole: UserRole, demoEmail: string) => {
-    setEmail(demoEmail);
+    setUsernameOrEmail(demoEmail);
     setPassword('Demo@123');
     setSelectedRole(demoRole);
     login(demoEmail, demoRole);
     onLoginSuccess(demoRole);
   };
 
+  // Patient Self-Registration Handler
+  const handleSignupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignupError('');
+
+    if (!signupForm.name.trim()) {
+      setSignupError('Please enter your full legal name');
+      return;
+    }
+    if (!signupForm.phone.trim()) {
+      setSignupError('Please enter your mobile phone number');
+      return;
+    }
+    if (!signupForm.address.trim()) {
+      setSignupError('Please enter your residential address');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { user } = signupPatient(
+        {
+          name: signupForm.name.trim(),
+          phone: signupForm.phone.trim(),
+          date_of_birth: signupForm.date_of_birth,
+          gender: signupForm.gender,
+          blood_group: signupForm.blood_group,
+          address: signupForm.address.trim(),
+          emergency_contact: signupForm.emergency_contact.trim()
+            ? `${signupForm.emergency_contact} (${signupForm.emergency_relation})`
+            : undefined,
+          emergency_relation: signupForm.emergency_relation,
+          allergies: signupForm.allergies || 'None known',
+          medical_history: signupForm.medical_history || 'No prior chronic conditions recorded',
+          chronic_conditions: signupForm.medical_history,
+          medications: 'None',
+        },
+        signupForm.email.trim() || undefined
+      );
+
+      setIsSubmitting(false);
+      onLoginSuccess('patient');
+    } catch (err) {
+      setIsSubmitting(false);
+      setSignupError('Registration failed. Please try again.');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8">
-        {/* App Header & Branding */}
-        <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-teal-700/20 mb-3 border border-teal-100 bg-white p-1">
+    <div className="min-h-screen bg-slate-900/5 bg-[radial-gradient(#0d9488_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center p-3 sm:p-6">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 p-5 sm:p-8 relative overflow-hidden">
+        
+        {/* Top App Identity */}
+        <div className="flex flex-col items-center text-center mb-4">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-teal-700/20 mb-2.5 border border-teal-100 bg-white p-1 flex items-center justify-center">
             <img
               src="/icon-192.png"
               alt="Smart Referral App Icon"
               className="w-full h-full object-contain rounded-xl"
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
             />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Smart Referral System
           </h1>
-          <p className="text-xs text-slate-500 mt-1 max-w-xs">
-            Mobile-First Tele-Triage, QR Digital Referral Pass & Clinical Matching
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm">
+            Mobile-First Tele-Triage, Patient QR Passes & Hospital Inventory Network
           </p>
         </div>
 
-        {/* Quick Demo Login Cards */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              One-Tap Demo Accounts
-            </span>
-          </div>
+        {/* Dynamic Typing Animation UI */}
+        <TypewriterHeader />
 
-          <div className="grid grid-cols-1 gap-2">
-            {/* Patient - Featured */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('patient', 'patient@demo.com')}
-              className="flex items-center justify-between p-3 rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100/80 text-left transition active:scale-[0.99] group shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
-                  <QrCode className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    Ravi Kumar
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
-                      PATIENT PORTAL
-                    </span>
-                  </div>
-                  <div className="text-xs text-amber-900/80 font-medium">Digital QR Pass • Active Referral Status</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-amber-700 group-hover:translate-x-0.5 transition" />
-            </button>
-
-            {/* Doctor */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('phc_doctor', 'doctor@demo.com')}
-              className="flex items-center justify-between p-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/70 text-left transition active:scale-[0.99] group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-                  <Stethoscope className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    Dr. Anjali Rao
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800">
-                      DOCTOR
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">doctor@demo.com • PHC Kukatpally</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition" />
-            </button>
-
-            {/* Hospital Desk */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('hospital_staff', 'hospital@demo.com')}
-              className="flex items-center justify-between p-3 rounded-2xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/70 text-left transition active:scale-[0.99] group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-                  <Building className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    District Hospital Desk
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-800">
-                      HOSPITAL
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">hospital@demo.com • Triage & CCU</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-0.5 transition" />
-            </button>
-
-            {/* Admin */}
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('admin', 'admin@demo.com')}
-              className="flex items-center justify-between p-3 rounded-2xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/70 text-left transition active:scale-[0.99] group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-sm">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    System Administrator
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-200 text-purple-800">
-                      ADMIN
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">admin@demo.com • Command Center</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-purple-600 group-hover:translate-x-0.5 transition" />
-            </button>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200"></div>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-400 font-semibold">Or Sign In Manually</span>
-          </div>
-        </div>
-
-        {/* Manual Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Select Role
-            </label>
-            <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('patient');
-                  setEmail('patient@demo.com');
-                }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                  selectedRole === 'patient'
-                    ? 'bg-white text-amber-800 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Patient
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('phc_doctor');
-                  setEmail('doctor@demo.com');
-                }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                  selectedRole === 'phc_doctor'
-                    ? 'bg-white text-teal-800 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Doctor
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('hospital_staff');
-                  setEmail('hospital@demo.com');
-                }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                  selectedRole === 'hospital_staff'
-                    ? 'bg-white text-blue-800 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Hospital
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRole('admin');
-                  setEmail('admin@demo.com');
-                }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
-                  selectedRole === 'admin'
-                    ? 'bg-white text-purple-800 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="patient@demo.com"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
+        {/* Tab Toggle: Sign In vs Patient Self-Registration */}
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-slate-100 border border-slate-200 mb-5">
           <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-md shadow-teal-700/20 transition active:scale-[0.98] mt-2 flex items-center justify-center gap-2"
+            type="button"
+            id="tab-btn-signin"
+            onClick={() => setActiveTab('signin')}
+            className={`py-2 text-xs sm:text-sm font-bold rounded-xl transition ${
+              activeTab === 'signin'
+                ? 'bg-white text-teal-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
-            <span>Sign In to Dashboard</span>
-            <ArrowRight className="w-4 h-4" />
+            Sign In (Mock Auth)
           </button>
-        </form>
+          <button
+            type="button"
+            id="tab-btn-signup"
+            onClick={() => setActiveTab('signup')}
+            className={`py-2 text-xs sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+              activeTab === 'signup'
+                ? 'bg-white text-teal-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <UserPlus className="w-3.5 h-3.5 text-teal-600" />
+            <span>Patient Sign Up</span>
+          </button>
+        </div>
 
-        {/* Footer Notes */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-slate-400 text-xs">
-          <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-          <span>PWA Ready • Offline Caching • 40/20/20/20 Matching</span>
+        {/* TAB 1: SIGN IN FORM */}
+        {activeTab === 'signin' && (
+          <div className="space-y-4">
+            {/* Quick 1-Tap Demo Shortcuts */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>One-Tap Role Login</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Any password works</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Patient */}
+                <button
+                  type="button"
+                  id="btn-quick-patient"
+                  onClick={() => handleQuickDemoLogin('patient', 'patient@demo.com')}
+                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border-2 border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-left transition active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+                    <QrCode className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">Patient</div>
+                    <div className="text-[10px] text-amber-900 font-semibold truncate">Ravi Kumar (QR Pass)</div>
+                  </div>
+                </button>
+
+                {/* Doctor */}
+                <button
+                  type="button"
+                  id="btn-quick-doctor"
+                  onClick={() => handleQuickDemoLogin('phc_doctor', 'doctor@demo.com')}
+                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-left transition active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Stethoscope className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">Doctor</div>
+                    <div className="text-[10px] text-emerald-800 font-semibold truncate">Dr. Anjali Rao</div>
+                  </div>
+                </button>
+
+                {/* Hospital Desk */}
+                <button
+                  type="button"
+                  id="btn-quick-hospital"
+                  onClick={() => handleQuickDemoLogin('hospital_staff', 'hospital@demo.com')}
+                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-left transition active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                    <Building className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">Hospital</div>
+                    <div className="text-[10px] text-blue-800 font-semibold truncate">District Hospital Desk</div>
+                  </div>
+                </button>
+
+                {/* Admin */}
+                <button
+                  type="button"
+                  id="btn-quick-admin"
+                  onClick={() => handleQuickDemoLogin('admin', 'admin@demo.com')}
+                  className="flex items-center gap-2.5 p-2.5 rounded-2xl border border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-left transition active:scale-[0.98]"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">Administrator</div>
+                    <div className="text-[10px] text-purple-800 font-semibold truncate">System Command</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase">
+                <span className="bg-white px-2 text-slate-400 font-semibold">Or Enter Custom Credentials</span>
+              </div>
+            </div>
+
+            {/* Manual Mock Login Form */}
+            <form onSubmit={handleSignIn} className="space-y-3">
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                  {loginError}
+                </div>
+              )}
+
+              {/* 4 Role Selector Buttons */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Select Role to Access
+                </label>
+                <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200">
+                  <button
+                    type="button"
+                    id="role-select-patient"
+                    onClick={() => {
+                      setSelectedRole('patient');
+                      if (usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'hospital@demo.com' || usernameOrEmail === 'admin@demo.com') {
+                        setUsernameOrEmail('patient@demo.com');
+                      }
+                    }}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                      selectedRole === 'patient'
+                        ? 'bg-amber-500 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Patient
+                  </button>
+                  <button
+                    type="button"
+                    id="role-select-doctor"
+                    onClick={() => {
+                      setSelectedRole('phc_doctor');
+                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'hospital@demo.com' || usernameOrEmail === 'admin@demo.com') {
+                        setUsernameOrEmail('doctor@demo.com');
+                      }
+                    }}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                      selectedRole === 'phc_doctor'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Doctor
+                  </button>
+                  <button
+                    type="button"
+                    id="role-select-hospital"
+                    onClick={() => {
+                      setSelectedRole('hospital_staff');
+                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'admin@demo.com') {
+                        setUsernameOrEmail('hospital@demo.com');
+                      }
+                    }}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                      selectedRole === 'hospital_staff'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hospital
+                  </button>
+                  <button
+                    type="button"
+                    id="role-select-admin"
+                    onClick={() => {
+                      setSelectedRole('admin');
+                      if (usernameOrEmail === 'patient@demo.com' || usernameOrEmail === 'doctor@demo.com' || usernameOrEmail === 'hospital@demo.com') {
+                        setUsernameOrEmail('admin@demo.com');
+                      }
+                    }}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                      selectedRole === 'admin'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Username or Email
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    id="input-login-username"
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    placeholder="Enter any username or email (e.g. dr_rao, patient_ravi)"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    id="input-login-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Any password combination accepted"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  💡 Prototype Mode: Any random password and username will successfully log in.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                id="btn-submit-login"
+                className="w-full py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-md shadow-teal-700/20 transition active:scale-[0.98] mt-2 flex items-center justify-center gap-2"
+              >
+                <span>Sign In as {selectedRole === 'phc_doctor' ? 'Doctor' : selectedRole === 'hospital_staff' ? 'Hospital' : selectedRole === 'patient' ? 'Patient' : 'Administrator'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 2: PATIENT SELF-REGISTRATION (SIGN UP) */}
+        {activeTab === 'signup' && (
+          <form onSubmit={handleSignupSubmit} className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
+              <strong>Patient Self-Registration:</strong> Register your digital profile to receive a unique Patient ID, digital QR Pass, and automated emergency triage routing.
+            </div>
+
+            {signupError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {signupError}
+              </div>
+            )}
+
+            {/* Full Name */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Full Legal Name *
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  id="signup-name"
+                  value={signupForm.name}
+                  onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
+                  placeholder="e.g. Ramesh Chandra Verma"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Phone & Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mobile Number *
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="tel"
+                    id="signup-phone"
+                    value={signupForm.phone}
+                    onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                    placeholder="98490 12345"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="email"
+                    id="signup-email"
+                    value={signupForm.email}
+                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                    placeholder="name@email.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* DOB, Gender & Blood Group */}
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  id="signup-dob"
+                  value={signupForm.date_of_birth}
+                  onChange={(e) => setSignupForm({ ...signupForm, date_of_birth: e.target.value })}
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Gender
+                </label>
+                <select
+                  id="signup-gender"
+                  value={signupForm.gender}
+                  onChange={(e) => setSignupForm({ ...signupForm, gender: e.target.value as any })}
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Blood Group
+                </label>
+                <select
+                  id="signup-blood"
+                  value={signupForm.blood_group}
+                  onChange={(e) => setSignupForm({ ...signupForm, blood_group: e.target.value })}
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white font-bold text-rose-700"
+                >
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Residential Address *
+              </label>
+              <div className="relative">
+                <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  id="signup-address"
+                  value={signupForm.address}
+                  onChange={(e) => setSignupForm({ ...signupForm, address: e.target.value })}
+                  placeholder="Street, Locality, City, PIN"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Emergency Contact Phone
+                </label>
+                <input
+                  type="tel"
+                  id="signup-emergency"
+                  value={signupForm.emergency_contact}
+                  onChange={(e) => setSignupForm({ ...signupForm, emergency_contact: e.target.value })}
+                  placeholder="98490 99999"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Relationship
+                </label>
+                <select
+                  value={signupForm.emergency_relation}
+                  onChange={(e) => setSignupForm({ ...signupForm, emergency_relation: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
+                >
+                  <option value="Spouse">Spouse</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Child">Child</option>
+                  <option value="Guardian">Guardian</option>
+                  <option value="Friend">Friend</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Known Allergies & Medical History */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Known Allergies (Drug / Food / Environmental)
+              </label>
+              <input
+                type="text"
+                id="signup-allergies"
+                value={signupForm.allergies}
+                onChange={(e) => setSignupForm({ ...signupForm, allergies: e.target.value })}
+                placeholder="e.g. Penicillin, Sulfa drugs, Peanuts (or None known)"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Past Medical History / Chronic Conditions
+              </label>
+              <input
+                type="text"
+                id="signup-history"
+                value={signupForm.medical_history}
+                onChange={(e) => setSignupForm({ ...signupForm, medical_history: e.target.value })}
+                placeholder="e.g. Hypertension (5 yrs), Type 2 Diabetes, Asthma"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Account Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Account Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+                <input
+                  type="password"
+                  id="signup-password"
+                  value={signupForm.password}
+                  onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                  placeholder="Create password (any value accepted)"
+                  className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              id="btn-register-submit"
+              disabled={isSubmitting}
+              className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md shadow-amber-600/20 transition active:scale-[0.98] mt-3 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isSubmitting ? 'Registering...' : 'Complete Self-Registration & Open Pass'}</span>
+            </button>
+          </form>
+        )}
+
+        {/* Footer info */}
+        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-center gap-2 text-slate-400 text-xs">
+          <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+          <span>Offline Service Worker Active • Instant Triage Pass</span>
         </div>
       </div>
     </div>

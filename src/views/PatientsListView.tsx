@@ -18,8 +18,11 @@ interface PatientsListViewProps {
 }
 
 export const PatientsListView: React.FC<PatientsListViewProps> = ({ onNavigate }) => {
-  const { patients, referrals } = useApp();
+  const { currentUser, patients, referrals } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Doctor role is restricted from patient registration
+  const canRegister = currentUser?.role === 'hospital_staff' || currentUser?.role === 'admin';
 
   const calculateAge = (dobString: string): number => {
     if (!dobString) return 0;
@@ -56,14 +59,16 @@ export const PatientsListView: React.FC<PatientsListViewProps> = ({ onNavigate }
               Registered primary healthcare patients
             </p>
           </div>
-          <button
-            id="btn-register-new-patient"
-            onClick={() => onNavigate('new_patient')}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>+ Register Patient</span>
-          </button>
+          {canRegister && (
+            <button
+              id="btn-register-new-patient"
+              onClick={() => onNavigate('new_patient')}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ Register Patient</span>
+            </button>
+          )}
         </div>
 
         {/* Live Search Box */}

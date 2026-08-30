@@ -43,9 +43,13 @@ import { Referral, ReferralStatus } from '../types';
 
 interface PatientDashboardViewProps {
   onNavigate: (view: string, params?: Record<string, any>) => void;
+  initialTab?: 'pass' | 'guidance' | 'summary' | 'history' | 'profile';
 }
 
-export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNavigate }) => {
+export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
+  onNavigate,
+  initialTab,
+}) => {
   const {
     currentUser,
     patients,
@@ -55,6 +59,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
     setActivePatientId,
     switchDemoUser,
     getReferralHistory,
+    updatePatient,
     isOnline,
     lastSWCacheTime,
     syncToServiceWorker,
@@ -63,14 +68,26 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
   const [copiedCode, setCopiedCode] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [selectedReferralId, setSelectedReferralId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'pass' | 'guidance' | 'summary' | 'history'>('pass');
+  const [activeTab, setActiveTab] = useState<'pass' | 'guidance' | 'summary' | 'history' | 'profile'>(
+    initialTab || 'pass'
+  );
   const [showPatientSelect, setShowPatientSelect] = useState(false);
   const [isSyncingSW, setIsSyncingSW] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
   const [simulateOffline, setSimulateOffline] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
 
   // Effective online status (accounting for simulated offline testing)
   const effectiveOnline = isOnline && !simulateOffline;
+
+  // Sync initialTab when props change
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    } else {
+      setActiveTab('pass');
+    }
+  }, [initialTab]);
 
   // Find active patient (either from currentUser or activePatientId or default to Ravi Kumar)
   const currentPatient =
@@ -78,6 +95,63 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
     patients.find((p) => p.id === currentUser?.patient_id) ||
     patients.find((p) => p.name.includes('Ravi Kumar')) ||
     patients[0];
+
+  // Local state for profile form
+  const [profileForm, setProfileForm] = useState({
+    name: currentPatient?.name || '',
+    phone: currentPatient?.phone || '',
+    address: currentPatient?.address || '',
+    blood_group: currentPatient?.blood_group || 'O+',
+    date_of_birth: currentPatient?.date_of_birth || '1988-04-12',
+    gender: currentPatient?.gender || 'Male',
+    emergency_contact: currentPatient?.emergency_contact || 'Sunita Kumar (98490 54321)',
+    emergency_relation: currentPatient?.emergency_relation || 'Spouse',
+    allergies: currentPatient?.allergies || 'Penicillin (mild rash)',
+    chronic_conditions: currentPatient?.chronic_conditions || currentPatient?.medical_history || 'Hypertension (3 yrs)',
+    medications: currentPatient?.medications || 'Amlodipine 5mg OD',
+  });
+
+  // Keep profile form in sync when currentPatient changes
+  React.useEffect(() => {
+    if (currentPatient) {
+      setProfileForm({
+        name: currentPatient.name,
+        phone: currentPatient.phone,
+        address: currentPatient.address,
+        blood_group: currentPatient.blood_group || 'O+',
+        date_of_birth: currentPatient.date_of_birth,
+        gender: currentPatient.gender,
+        emergency_contact: currentPatient.emergency_contact || '',
+        emergency_relation: currentPatient.emergency_relation || 'Spouse',
+        allergies: currentPatient.allergies || 'None known',
+        chronic_conditions: currentPatient.chronic_conditions || currentPatient.medical_history || 'None',
+        medications: currentPatient.medications || 'None',
+      });
+    }
+  }, [currentPatient]);
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPatient) return;
+
+    updatePatient(currentPatient.id, {
+      name: profileForm.name,
+      phone: profileForm.phone,
+      address: profileForm.address,
+      blood_group: profileForm.blood_group,
+      date_of_birth: profileForm.date_of_birth,
+      gender: profileForm.gender as any,
+      emergency_contact: profileForm.emergency_contact,
+      emergency_relation: profileForm.emergency_relation,
+      allergies: profileForm.allergies,
+      chronic_conditions: profileForm.chronic_conditions,
+      medical_history: profileForm.chronic_conditions,
+      medications: profileForm.medications,
+    });
+
+    setProfileSaveSuccess(true);
+    setTimeout(() => setProfileSaveSuccess(false), 3500);
+  };
 
   // Get all referrals for this patient, sorted newest first
   const patientReferrals = referrals
@@ -387,8 +461,8 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
         </div>
       )}
 
-      {/* If No Referrals Exist for this patient */}
-      {!activeReferral ? (
+      {/* If No Referrals Exist and user is on a referral-dependent tab */}
+      {!activeReferral && activeTab !== 'profile' ? (
         <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
             <FileText className="w-8 h-8" />
@@ -396,18 +470,15 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
           <div>
             <h3 className="text-lg font-bold text-slate-900">No Active Referral Records</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              There are currently no referrals logged for {currentPatient?.name}. A Primary Health Centre (PHC) doctor can create a referral case.
+              There are currently no referrals logged for {currentPatient?.name}. You can update your profile or have a PHC doctor create a referral.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
             <button
-              onClick={() => {
-                switchDemoUser('phc_doctor');
-                onNavigate('create_referral', { patientId: currentPatient?.id });
-              }}
+              onClick={() => onNavigate('patient_dashboard', { tab: 'profile' })}
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition"
             >
-              Switch to Doctor & Create Referral
+              View & Edit Profile
             </button>
             <button
               onClick={() => {
@@ -420,62 +491,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
             </button>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Navigation Sub-Tabs for Patient View */}
-          <div className="grid grid-cols-4 gap-1 bg-slate-200/80 p-1 rounded-2xl border border-slate-200">
-            <button
-              onClick={() => setActiveTab('pass')}
-              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'pass'
-                  ? 'bg-white text-teal-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Digital Pass</span>
-              <span className="sm:hidden">Pass</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('guidance')}
-              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'guidance'
-                  ? 'bg-white text-teal-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Hospital Guidance</span>
-              <span className="sm:hidden">Guidance</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('summary')}
-              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'summary'
-                  ? 'bg-white text-teal-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FileCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Medical Summary</span>
-              <span className="sm:hidden">Summary</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'history'
-                  ? 'bg-white text-teal-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Live Journey</span>
-              <span className="sm:hidden">Journey</span>
-            </button>
-          </div>
+      ) : null}
 
           {/* ========================================================================= */}
           {/* TAB 1: DIGITAL PASS & STATUS CARD (Default View) */}
@@ -978,7 +994,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
                     <p className="text-xs text-slate-500">Real-time tele-triage progress from PHC to Hospital</p>
                   </div>
                   <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
-                    {activeReferral.referral_code}
+                    {activeReferral?.referral_code}
                   </span>
                 </div>
 
@@ -1029,8 +1045,264 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({ onNa
               </div>
             </div>
           )}
-        </>
-      )}
+
+          {/* ========================================================================= */}
+          {/* TAB 5: PATIENT PROFILE & SETTINGS */}
+          {/* ========================================================================= */}
+          {activeTab === 'profile' && (
+            <div className="space-y-4">
+              {/* Profile Card Header */}
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-14 h-14 rounded-2xl bg-teal-800 text-white font-black text-xl flex items-center justify-center shadow-md">
+                      {currentPatient?.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase() || 'PT'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-black text-slate-900 leading-tight">
+                          {currentPatient?.name}
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[10px] font-bold uppercase tracking-wider">
+                          Active Account
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">
+                        ID: <strong className="text-slate-800">{currentPatient?.patient_code}</strong> • Blood: <strong className="text-rose-700">{currentPatient?.blood_group || 'O+'}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('pass')}
+                      className="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-900 font-bold text-xs border border-teal-200 transition flex items-center gap-1.5"
+                    >
+                      <QrCode className="w-4 h-4 text-teal-700" />
+                      <span>View Pass</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Save Success Banner */}
+              {profileSaveSuccess && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Your patient profile information and emergency contacts have been updated successfully!</span>
+                </div>
+              )}
+
+              {/* Profile Edit Form */}
+              <form onSubmit={handleSaveProfile} className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5">
+                <div className="border-b border-slate-100 pb-3">
+                  <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <User className="w-4 h-4 text-teal-700" />
+                    <span>Personal Details & Contact Information</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Keep your contact and emergency details updated for triage and hospital admissions
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Full Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      id="input-profile-name"
+                      required
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Mobile Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      id="input-profile-phone"
+                      required
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      id="input-profile-dob"
+                      value={profileForm.date_of_birth}
+                      onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Gender
+                    </label>
+                    <select
+                      id="input-profile-gender"
+                      value={profileForm.gender}
+                      onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Blood Group
+                    </label>
+                    <select
+                      id="input-profile-blood-group"
+                      value={profileForm.blood_group}
+                      onChange={(e) => setProfileForm({ ...profileForm, blood_group: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    >
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                        <option key={bg} value={bg}>
+                          {bg}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Residential Address
+                    </label>
+                    <input
+                      type="text"
+                      id="input-profile-address"
+                      value={profileForm.address}
+                      onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Emergency Contact Section */}
+                <div className="border-t border-slate-100 pt-4">
+                  <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <PhoneCall className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Emergency Contact Details</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Emergency Contact (Name & Phone)
+                      </label>
+                      <input
+                        type="text"
+                        id="input-profile-emergency-contact"
+                        value={profileForm.emergency_contact}
+                        onChange={(e) => setProfileForm({ ...profileForm, emergency_contact: e.target.value })}
+                        placeholder="e.g. Sunita Kumar (98490 54321)"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Relationship to Patient
+                      </label>
+                      <input
+                        type="text"
+                        id="input-profile-emergency-relation"
+                        value={profileForm.emergency_relation}
+                        onChange={(e) => setProfileForm({ ...profileForm, emergency_relation: e.target.value })}
+                        placeholder="e.g. Spouse, Parent, Sibling, Guardian"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medical History & Allergies Section */}
+                <div className="border-t border-slate-100 pt-4">
+                  <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <HeartPulse className="w-3.5 h-3.5 text-teal-600" />
+                    <span>Medical History, Allergies & Medications</span>
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Known Drug Allergies & Reactions
+                      </label>
+                      <input
+                        type="text"
+                        id="input-profile-allergies"
+                        value={profileForm.allergies}
+                        onChange={(e) => setProfileForm({ ...profileForm, allergies: e.target.value })}
+                        placeholder="e.g. Penicillin (rash), Sulfa drugs, None known"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Chronic Medical Conditions / History
+                      </label>
+                      <input
+                        type="text"
+                        id="input-profile-chronic"
+                        value={profileForm.chronic_conditions}
+                        onChange={(e) => setProfileForm({ ...profileForm, chronic_conditions: e.target.value })}
+                        placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Current Regular Medications
+                      </label>
+                      <input
+                        type="text"
+                        id="input-profile-meds"
+                        value={profileForm.medications}
+                        onChange={(e) => setProfileForm({ ...profileForm, medications: e.target.value })}
+                        placeholder="e.g. Metformin 500mg BD, Amlodipine 5mg OD"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit button */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    type="submit"
+                    id="btn-save-profile"
+                    className="px-6 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Save Profile Changes</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
       {/* ========================================================================= */}
       {/* FULLSCREEN QR CODE ZOOM MODAL */}

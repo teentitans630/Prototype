@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import {
   SEED_FACILITIES,
   SEED_FACILITY_SERVICES,
+  SEED_INVENTORY,
   SEED_PATIENTS,
   SEED_PROFILES,
   SEED_REFERRAL_HISTORY,
@@ -10,6 +11,7 @@ import {
 import {
   Facility,
   FacilityService,
+  HospitalInventoryItem,
   Patient,
   Referral,
   ReferralPriority,
@@ -31,6 +33,7 @@ interface AppContextType {
   patients: Patient[];
   referrals: Referral[];
   statusHistory: ReferralStatusHistory[];
+  inventory: HospitalInventoryItem[];
   activePatientId: string;
   setActivePatientId: (id: string) => void;
   
@@ -40,12 +43,17 @@ interface AppContextType {
   syncToServiceWorker: () => Promise<boolean>;
   
   // Auth
-  login: (email: string, role: UserRole, patientId?: string) => boolean;
+  login: (email: string, role: UserRole, patientId?: string, customName?: string) => boolean;
+  signupPatient: (
+    patientData: Omit<Patient, 'id' | 'patient_code' | 'created_at'>,
+    email?: string
+  ) => { user: UserProfile; patient: Patient };
   switchDemoUser: (role: UserRole, patientId?: string) => void;
   logout: () => void;
   
   // Patients
   registerPatient: (patientData: Omit<Patient, 'id' | 'patient_code' | 'created_at'>) => Patient;
+  updatePatient: (patientId: string, updates: Partial<Patient>) => void;
   getPatientById: (id: string) => Patient | undefined;
   
   // Referrals
@@ -76,6 +84,9 @@ interface AppContextType {
   getReferralsForPatient: (patientId: string) => Referral[];
   getReferralById: (id: string) => Referral | undefined;
   getReferralHistory: (referralId: string) => ReferralStatusHistory[];
+  
+  // Inventory
+  updateInventoryStock: (itemId: string, newStock: number) => void;
   
   // Reset
   resetToDemoData: () => void;
@@ -123,10 +134,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Initialize state from localStorage or seed
+  // Initialize state - always start on login page
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}user`);
-    return saved ? JSON.parse(saved) : SEED_PROFILES[0]; // Default to Dr. Anjali Rao
+    return null;
   });
 
   const [facilities, setFacilities] = useState<Facility[]>(() => {
@@ -152,6 +162,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [statusHistory, setStatusHistory] = useState<ReferralStatusHistory[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}history`);
     return saved ? JSON.parse(saved) : SEED_REFERRAL_HISTORY;
+  });
+
+  const [inventory, setInventory] = useState<HospitalInventoryItem[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}inventory`);
+    return saved ? JSON.parse(saved) : SEED_INVENTORY;
   });
 
   const [activePatientId, setActivePatientId] = useState<string>(() => {
@@ -226,48 +241,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY_PREFIX}history`, JSON.stringify(statusHistory));
   }, [statusHistory]);
 
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}inventory`, JSON.stringify(inventory));
+  }, [inventory]);
+
   // Automatically update Service Worker offline cache whenever patient or referral data changes
   useEffect(() => {
     syncToServiceWorker();
   }, [patients, referrals, facilities, statusHistory, activePatientId, syncToServiceWorker]);
 
-  const login = (email: string, role: UserRole, patientId?: string): boolean => {
+  // Flexible Mock Authentication: allows any username/password combination
+  const login = (
+    emailOrUsername: string,
+    role: UserRole,
+    patientId?: string,
+    customName?: string
+  ): boolean => {
+    const trimmed = (emailOrUsername || '').trim();
+    const effectiveEmail = trimmed.includes('@') ? trimmed : `${trimmed || 'user'}@demo.com`;
+
     if (role === 'patient') {
-      const pid = patientId || activePatientId || 'pat-01';
+      const pid = patientId || activePatientId || (patients[0] ? patients[0].id : 'pat-01');
       const patientObj = patients.find((p) => p.id === pid) || patients[0];
+      const patientName = customName || patientObj?.name || 'Registered Patient';
+      
       const patientUser: UserProfile = {
-        id: `user-${patientObj.id}`,
-        email: email || 'patient@demo.com',
-        name: patientObj.name,
+        id: `user-${patientObj ? patientObj.id : Date.now()}`,
+        email: effectiveEmail,
+        name: patientName,
         role: 'patient',
         facility_id: null,
         facility_name: 'Patient Portal',
-        patient_id: patientObj.id,
-        phone: patientObj.phone,
+        patient_id: patientObj ? patientObj.id : 'pat-01',
+        phone: patientObj ? patientObj.phone : '9876543210',
         created_at: new Date().toISOString(),
       };
-      setActivePatientId(patientObj.id);
+      if (patientObj) {
+        setActivePatientId(patientObj.id);
+      }
       setCurrentUser(patientUser);
       return true;
     }
 
-    const found = SEED_PROFILES.find((p) => p.email.toLowerCase() === email.toLowerCase() || p.role === role);
-    if (found) {
-      setCurrentUser(found);
+    if (role === 'phc_doctor') {
+      const defaultDoc = SEED_PROFILES.find((p) => p.role === 'phc_doctor');
+      const docUser: UserProfile = {
+        id: `user-doc-${Date.now()}`,
+        email: effectiveEmail,
+        name: customName || (trimmed && !trimmed.includes('@') ? `Dr. ${trimmed}` : defaultDoc?.name || 'Dr. Anjali Rao'),
+        role: 'phc_doctor',
+        facility_id: facilities[0]?.id || 'fac-phc-01',
+        facility_name: facilities[0]?.name || 'PHC Kukatpally',
+        phone: '+91 98490 12345',
+        created_at: new Date().toISOString(),
+      };
+      setCurrentUser(docUser);
       return true;
     }
-    // Fallback custom user
-    const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      email,
-      name: role === 'phc_doctor' ? 'Dr. Primary Care' : role === 'hospital_staff' ? 'Hospital Duty Desk' : 'Administrator',
-      role,
-      facility_id: role === 'phc_doctor' ? facilities[0].id : role === 'hospital_staff' ? facilities[1].id : null,
-      facility_name: role === 'phc_doctor' ? facilities[0].name : role === 'hospital_staff' ? facilities[1].name : 'Admin Command',
+
+    if (role === 'hospital_staff') {
+      const defaultHosp = SEED_PROFILES.find((p) => p.role === 'hospital_staff');
+      const hospUser: UserProfile = {
+        id: `user-hosp-${Date.now()}`,
+        email: effectiveEmail,
+        name: customName || (trimmed && !trimmed.includes('@') ? `${trimmed} Desk` : defaultHosp?.name || 'District Hospital Desk'),
+        role: 'hospital_staff',
+        facility_id: facilities[1]?.id || 'fac-dh-02',
+        facility_name: facilities[1]?.name || 'District Hospital',
+        phone: '+91 98490 67890',
+        created_at: new Date().toISOString(),
+      };
+      setCurrentUser(hospUser);
+      return true;
+    }
+
+    // Administrator
+    const defaultAdmin = SEED_PROFILES.find((p) => p.role === 'admin');
+    const adminUser: UserProfile = {
+      id: `user-admin-${Date.now()}`,
+      email: effectiveEmail,
+      name: customName || (trimmed && !trimmed.includes('@') ? trimmed : defaultAdmin?.name || 'System Administrator'),
+      role: 'admin',
+      facility_id: null,
+      facility_name: 'State Health Command Center',
+      phone: '+91 98490 00000',
       created_at: new Date().toISOString(),
     };
-    setCurrentUser(newUser);
+    setCurrentUser(adminUser);
     return true;
+  };
+
+  // Patient Self-Registration / Signup
+  const signupPatient = (
+    patientData: Omit<Patient, 'id' | 'patient_code' | 'created_at'>,
+    email?: string
+  ): { user: UserProfile; patient: Patient } => {
+    const newPatient = registerPatient(patientData);
+    const effectiveEmail = email || `${newPatient.name.toLowerCase().replace(/\s+/g, '')}@patient.portal`;
+
+    const patientUser: UserProfile = {
+      id: `user-${newPatient.id}`,
+      email: effectiveEmail,
+      name: newPatient.name,
+      role: 'patient',
+      facility_id: null,
+      facility_name: 'Patient Portal',
+      patient_id: newPatient.id,
+      phone: newPatient.phone,
+      created_at: new Date().toISOString(),
+    };
+
+    setActivePatientId(newPatient.id);
+    setCurrentUser(patientUser);
+
+    return { user: patientUser, patient: newPatient };
   };
 
   const switchDemoUser = (role: UserRole, patientId?: string) => {
@@ -298,6 +385,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}user`);
   };
 
   const registerPatient = (
@@ -323,6 +411,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setPatients((prev) => [newPatient, ...prev]);
     return newPatient;
+  };
+
+  const updatePatient = (patientId: string, updates: Partial<Patient>) => {
+    setPatients((prev) =>
+      prev.map((p) => (p.id === patientId ? { ...p, ...updates } : p))
+    );
+
+    // If current logged in user is this patient, update profile name/phone too
+    if (currentUser?.patient_id === patientId) {
+      setCurrentUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updates.name || prev.name,
+              phone: updates.phone || prev.phone,
+            }
+          : prev
+      );
+    }
   };
 
   const getPatientById = (id: string) => {
@@ -489,6 +596,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const updateInventoryStock = (itemId: string, newStock: number) => {
+    const nowIso = new Date().toISOString();
+    setInventory((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const validStock = Math.max(0, newStock);
+        let status: 'In Stock' | 'Low Stock' | 'Critical' | 'Out of Stock' = 'In Stock';
+        if (validStock === 0) status = 'Out of Stock';
+        else if (validStock <= item.min_threshold * 0.4) status = 'Critical';
+        else if (validStock <= item.min_threshold) status = 'Low Stock';
+
+        return {
+          ...item,
+          current_stock: validStock,
+          status,
+          last_updated: nowIso,
+        };
+      })
+    );
+  };
+
   const getReferralsForPatient = (patientId: string) => {
     return referrals.filter((r) => r.patient_id === patientId);
   };
@@ -519,6 +647,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}patients`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}referrals`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}history`);
+    localStorage.removeItem(`${STORAGE_KEY_PREFIX}inventory`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}user`);
     
     setFacilities(SEED_FACILITIES);
@@ -526,7 +655,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPatients(SEED_PATIENTS);
     setReferrals(SEED_REFERRALS);
     setStatusHistory(SEED_REFERRAL_HISTORY);
-    setCurrentUser(SEED_PROFILES[0]);
+    setInventory(SEED_INVENTORY);
+    setCurrentUser(null);
   };
 
   return (
@@ -538,15 +668,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         patients,
         referrals,
         statusHistory,
+        inventory,
         activePatientId,
         setActivePatientId,
         isOnline,
         lastSWCacheTime,
         syncToServiceWorker,
         login,
+        signupPatient,
         switchDemoUser,
         logout,
         registerPatient,
+        updatePatient,
         getPatientById,
         createReferral,
         acceptReferral,
@@ -557,6 +690,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getReferralsForPatient,
         getReferralById,
         getReferralHistory,
+        updateInventoryStock,
         resetToDemoData,
       }}
     >
@@ -572,3 +706,4 @@ export const useApp = () => {
   }
   return context;
 };
+

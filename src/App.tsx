@@ -24,13 +24,14 @@ interface NavigationState {
 
 function MainApp() {
   const { currentUser } = useApp();
-  const [navState, setNavState] = useState<NavigationState>(() => {
-    if (!currentUser) return { view: 'login' };
-    if (currentUser.role === 'patient') return { view: 'patient_dashboard' };
-    if (currentUser.role === 'phc_doctor') return { view: 'phc_dashboard' };
-    if (currentUser.role === 'hospital_staff') return { view: 'hospital_dashboard' };
-    return { view: 'admin_dashboard' };
-  });
+  const [navState, setNavState] = useState<NavigationState>({ view: 'login' });
+
+  // Sync navigation view whenever user logs in or logs out
+  React.useEffect(() => {
+    if (!currentUser) {
+      setNavState({ view: 'login' });
+    }
+  }, [currentUser]);
 
   const handleNavigate = (view: string, params?: Record<string, any>) => {
     setNavState({ view, params });
@@ -58,7 +59,12 @@ function MainApp() {
   const renderCurrentView = () => {
     switch (navState.view) {
       case 'patient_dashboard':
-        return <PatientDashboardView onNavigate={handleNavigate} />;
+        return (
+          <PatientDashboardView
+            initialTab={navState.params?.tab}
+            onNavigate={handleNavigate}
+          />
+        );
 
       case 'phc_dashboard':
         return <PHCDashboardView onNavigate={handleNavigate} />;
@@ -129,7 +135,11 @@ function MainApp() {
   };
 
   return (
-    <AppShell currentView={navState.view} onNavigate={handleNavigate}>
+    <AppShell
+      currentView={navState.view}
+      currentParams={navState.params}
+      onNavigate={handleNavigate}
+    >
       {renderCurrentView()}
     </AppShell>
   );

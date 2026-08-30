@@ -59,10 +59,33 @@ export interface Patient {
   phone: string;
   address: string;
   emergency_contact?: string;
+  emergency_relation?: string;
   blood_group: string;
   medical_history: string;
   allergies: string;
+  medications?: string;
+  chronic_conditions?: string;
+  recent_vitals?: {
+    bp?: string;
+    hr?: string;
+    spo2?: string;
+    temp?: string;
+    resp?: string;
+    updated_at?: string;
+  };
   created_at: string;
+}
+
+export interface HospitalInventoryItem {
+  id: string;
+  facility_id: string;
+  name: string;
+  category: 'Medicine' | 'Equipment' | 'Consumable' | 'Blood Product';
+  current_stock: number;
+  min_threshold: number;
+  unit: string;
+  status: 'In Stock' | 'Low Stock' | 'Critical' | 'Out of Stock';
+  last_updated: string;
 }
 
 export interface Referral {

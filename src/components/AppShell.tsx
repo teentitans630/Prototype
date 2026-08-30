@@ -24,18 +24,21 @@ import { UserRole } from '../types';
 
 interface AppShellProps {
   currentView: string;
+  currentParams?: Record<string, any>;
   onNavigate: (view: string, params?: Record<string, any>) => void;
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
   currentView,
+  currentParams,
   onNavigate,
   children,
 }) => {
-  const { currentUser, logout, switchDemoUser, resetToDemoData } = useApp();
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const { currentUser, logout, resetToDemoData } = useApp();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const activePatientTab = currentParams?.tab || 'pass';
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
@@ -72,21 +75,6 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const roleConfig = currentUser ? getRoleBadge(currentUser.role) : null;
   const RoleIcon = roleConfig?.icon || Stethoscope;
-
-  const handleRoleSwitch = (role: UserRole) => {
-    switchDemoUser(role);
-    setShowRoleDropdown(false);
-    if (role === 'phc_doctor') {
-      onNavigate('phc_dashboard');
-    } else if (role === 'hospital_staff') {
-      onNavigate('hospital_dashboard');
-    } else if (role === 'patient') {
-      onNavigate('patient_dashboard');
-    } else {
-      onNavigate('admin_dashboard');
-    }
-  };
-
   const isPatientRole = currentUser?.role === 'patient';
 
   return (
@@ -142,27 +130,23 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
             </div>
 
-            {/* User Profile & Demo Switcher */}
-            <div className="flex items-center gap-1.5 relative">
-              <button
-                id="role-switch-trigger"
-                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full border text-xs font-semibold transition active:scale-95 ${
+            {/* User Profile Badge & Logout (Strict Role Isolation) */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${
                   isPatientRole
-                    ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-900'
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
+                    : 'bg-slate-100 border-slate-200 text-slate-700'
                 }`}
-                title="Switch Demo Role"
               >
                 <RoleIcon className={`w-3.5 h-3.5 shrink-0 ${isPatientRole ? 'text-amber-600' : 'text-teal-600'}`} />
-                <span className="hidden sm:inline truncate max-w-[110px]">
+                <span className="hidden sm:inline truncate max-w-[120px]">
                   {currentUser?.name || 'User'}
                 </span>
-                <span className="sm:hidden font-bold">
+                <span className="text-[10px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider bg-white/80 border border-slate-200/80">
                   {roleConfig?.tag}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+              </div>
 
               {/* Quick Reset State Button */}
               <button
@@ -175,168 +159,17 @@ export const AppShell: React.FC<AppShellProps> = ({
 
               {/* Logout Button */}
               <button
+                id="btn-logout"
                 onClick={logout}
-                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-full transition active:scale-95 shadow-sm"
                 title="Logout"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                <span className="hidden sm:inline">Log Out</span>
               </button>
-
-              {/* Role Switcher Dropdown */}
-              {showRoleDropdown && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowRoleDropdown(false)}
-                  />
-                  <div className="absolute right-0 top-12 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        Active Profile
-                      </p>
-                      <p className="text-sm font-bold text-slate-800">{currentUser?.name}</p>
-                      <p className="text-xs text-teal-600 font-medium">{currentUser?.facility_name || 'Tele-Triage System'}</p>
-                    </div>
-
-                    <p className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Switch Demo Role
-                    </p>
-
-                    {/* Patient Portal Option */}
-                    <button
-                      id="switch-role-patient"
-                      onClick={() => handleRoleSwitch('patient')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition ${
-                        currentUser?.role === 'patient'
-                          ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span>Ravi Kumar</span>
-                          <span className="text-[9px] px-1 rounded bg-amber-200 text-amber-900 font-extrabold">
-                            PATIENT
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-normal">
-                          Patient Portal (Digital Pass & QR)
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Doctor Option */}
-                    <button
-                      id="switch-role-doctor"
-                      onClick={() => handleRoleSwitch('phc_doctor')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition mt-1 ${
-                        currentUser?.role === 'phc_doctor'
-                          ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <Stethoscope className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span>Dr. Anjali Rao</span>
-                          <span className="text-[9px] px-1 rounded bg-emerald-200 text-emerald-900 font-extrabold">
-                            DOCTOR
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-normal">PHC Kukatpally (Doctor View)</div>
-                      </div>
-                    </button>
-
-                    {/* Hospital Staff Option */}
-                    <button
-                      id="switch-role-hospital"
-                      onClick={() => handleRoleSwitch('hospital_staff')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition mt-1 ${
-                        currentUser?.role === 'hospital_staff'
-                          ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                        <Building className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span>District Hospital Desk</span>
-                          <span className="text-[9px] px-1 rounded bg-blue-200 text-blue-900 font-extrabold">
-                            HOSPITAL
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-normal">Hospital Staff (Triage & Beds)</div>
-                      </div>
-                    </button>
-
-                    {/* Admin Option */}
-                    <button
-                      id="switch-role-admin"
-                      onClick={() => handleRoleSwitch('admin')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition mt-1 ${
-                        currentUser?.role === 'admin'
-                          ? 'bg-teal-50 text-teal-900 font-bold border border-teal-200'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span>System Administrator</span>
-                          <span className="text-[9px] px-1 rounded bg-purple-200 text-purple-900 font-extrabold">
-                            ADMIN
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-normal">Command Center Analytics</div>
-                      </div>
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </header>
-
-        {/* Demo Fast-Action Banner */}
-        <div className="bg-slate-900 text-slate-100 px-4 py-2 flex items-center justify-between text-xs border-b border-slate-800">
-          <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-slate-300 font-medium">Active:</span>
-            <span className="font-bold text-white truncate">{currentUser?.name}</span>
-            <span className="text-slate-400 hidden sm:inline">
-              ({currentUser?.role === 'patient' ? 'Patient Portal' : currentUser?.role})
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {isPatientRole ? (
-              <button
-                onClick={() => handleRoleSwitch('phc_doctor')}
-                className="px-2.5 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-[11px] shadow transition active:scale-95 flex items-center gap-1"
-              >
-                <Stethoscope className="w-3 h-3" />
-                <span>Switch to Doctor View</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleRoleSwitch('patient')}
-                className="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold text-[11px] shadow transition active:scale-95 flex items-center gap-1"
-              >
-                <User className="w-3 h-3" />
-                <span>Patient Portal (Ravi Kumar)</span>
-              </button>
-            )}
-          </div>
-        </div>
 
         {/* Main Content Area */}
         <main className="flex-1 p-3 sm:p-5 bg-slate-50">
@@ -348,53 +181,75 @@ export const AppShell: React.FC<AppShellProps> = ({
           <div className="max-w-md md:max-w-4xl lg:max-w-5xl mx-auto flex items-center justify-around px-2 py-1.5">
             {isPatientRole ? (
               <>
-                {/* Patient Navigation Items */}
+                {/* Patient Navigation Items: Synced directly with patient views/tabs */}
                 <button
                   id="tab-patient-pass"
-                  onClick={() => onNavigate('patient_dashboard')}
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'pass' })}
                   className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
-                    currentView === 'patient_dashboard'
+                    currentView === 'patient_dashboard' && activePatientTab === 'pass'
                       ? 'text-teal-700 font-bold'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
+                  title="Digital Pass & QR"
                 >
-                  <QrCode className={`w-5 h-5 ${currentView === 'patient_dashboard' ? 'stroke-[2.5]' : ''}`} />
-                  <span className="text-[10px] mt-0.5">My Pass</span>
+                  <QrCode className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'pass' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Pass</span>
                 </button>
 
                 <button
-                  id="tab-patient-status"
-                  onClick={() => onNavigate('patient_dashboard')}
+                  id="tab-patient-hospital"
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'guidance' })}
                   className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
-                    currentView === 'patient_dashboard'
+                    currentView === 'patient_dashboard' && activePatientTab === 'guidance'
                       ? 'text-teal-700 font-bold'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
+                  title="Designated Hospital"
                 >
-                  <Activity className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5">Status</span>
+                  <Building2 className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'guidance' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Hospital</span>
                 </button>
 
                 <button
-                  id="tab-patient-facilities"
-                  onClick={() => onNavigate('facilities')}
+                  id="tab-patient-summary"
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'summary' })}
                   className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
-                    currentView === 'facilities'
+                    currentView === 'patient_dashboard' && activePatientTab === 'summary'
                       ? 'text-teal-700 font-bold'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
+                  title="Medical Summary"
                 >
-                  <Building2 className={`w-5 h-5 ${currentView === 'facilities' ? 'stroke-[2.5]' : ''}`} />
-                  <span className="text-[10px] mt-0.5">Hospitals</span>
+                  <FileText className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'summary' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Summary</span>
                 </button>
 
                 <button
-                  id="tab-switch-doctor"
-                  onClick={() => handleRoleSwitch('phc_doctor')}
-                  className="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl text-slate-500 hover:text-slate-800 transition"
+                  id="tab-patient-journey"
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'history' })}
+                  className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
+                    currentView === 'patient_dashboard' && activePatientTab === 'history'
+                      ? 'text-teal-700 font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Referral Journey & Status"
                 >
-                  <Stethoscope className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5">Doctor Hub</span>
+                  <Activity className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'history' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Journey</span>
+                </button>
+
+                <button
+                  id="tab-patient-profile"
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'profile' })}
+                  className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
+                    currentView === 'patient_dashboard' && activePatientTab === 'profile'
+                      ? 'text-teal-700 font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Patient Profile"
+                >
+                  <User className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'profile' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Profile</span>
                 </button>
               </>
             ) : (
@@ -444,17 +299,17 @@ export const AppShell: React.FC<AppShellProps> = ({
                 </button>
 
                 <button
-                  id="tab-patient-portal-quick"
-                  onClick={() => handleRoleSwitch('patient')}
+                  id="tab-facilities"
+                  onClick={() => onNavigate('facilities')}
                   className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
-                    currentView === 'patient_dashboard'
-                      ? 'text-amber-700 font-bold'
+                    currentView === 'facilities'
+                      ? 'text-teal-700 font-bold'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
-                  title="Open Patient Portal"
+                  title="Facilities Directory"
                 >
-                  <QrCode className="w-5 h-5" />
-                  <span className="text-[10px] mt-0.5">Patient Pass</span>
+                  <Building2 className={`w-5 h-5 ${currentView === 'facilities' ? 'stroke-[2.5]' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Directory</span>
                 </button>
 
                 <button
