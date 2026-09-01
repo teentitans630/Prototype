@@ -1,7 +1,9 @@
 {
   "name": "Smart Referral System",
   "description": "Mobile-first PWA connecting Primary Health Centres (PHCs) with hospitals for patient triage, intelligent facility matching, and referral tracking.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
