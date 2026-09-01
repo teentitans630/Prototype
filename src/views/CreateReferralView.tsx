@@ -8,6 +8,7 @@ import {
   ReferralPriority,
 } from '../types';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { ClinicalAlertBanner } from '../components/doctor/ClinicalAlertBanner';
 import {
   ArrowLeft,
   Search,
@@ -31,6 +32,8 @@ import {
   Building2,
   Info,
   QrCode,
+  Flame,
+  Radio,
 } from 'lucide-react';
 
 interface CreateReferralViewProps {
@@ -216,31 +219,85 @@ export const CreateReferralView: React.FC<CreateReferralViewProps> = ({
         </div>
 
         {step === 'form' && (
-          <button
-            type="button"
-            onClick={() => {
-              const ravi = patients.find((p) => p.name.includes('Ravi Kumar') || p.patient_code === 'PAT-000245') || patients[0];
-              if (ravi) {
-                setSelectedPatientId(ravi.id);
-                setChiefComplaint('Severe retrosternal chest pain radiating to left jaw & diaphoresis');
-                setSymptoms('Heavy chest tightness, dyspnea on minimal exertion, nausea, sweating');
-                setDiagnosis('Acute Coronary Syndrome / Suspected Anterior Wall STEMI');
-                setDuration('2.5 hours');
-                setRelevantHistory('Type 2 Diabetes (6 yrs), Hypertension on medication');
-                setCurrentTreatment('Aspirin 325mg stat, Clopidogrel 300mg stat, Sublingual Nitroglycerin given');
-                setDoctorNotes('ECG shows 2mm ST-elevation in V2-V4. Urgent cath lab transfer and coronary intervention recommended.');
-                setTemperature('98.4 °F');
-                setBloodPressure('148/92 mmHg');
-                setHeartRate('96 bpm');
-                setSpo2('95%');
-                setPriority('urgent');
-              }
-            }}
-            className="px-2.5 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs flex items-center gap-1 transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Load Demo Case</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                const ravi = patients.find((p) => p.name.includes('Ravi Kumar') || p.patient_code === 'PAT-000245') || patients[0];
+                if (ravi) {
+                  setSelectedPatientId(ravi.id);
+                  setChiefComplaint('Severe retrosternal chest pain radiating to left jaw & diaphoresis');
+                  setSymptoms('Heavy chest tightness, dyspnea on minimal exertion, nausea, sweating');
+                  setDiagnosis('Acute Coronary Syndrome / Suspected Anterior Wall STEMI');
+                  setDuration('2.5 hours');
+                  setRelevantHistory('Type 2 Diabetes (6 yrs), Hypertension on medication');
+                  setCurrentTreatment('Aspirin 325mg stat, Clopidogrel 300mg stat, Sublingual Nitroglycerin given');
+                  setDoctorNotes('ECG shows 2mm ST-elevation in V2-V4. Urgent cath lab transfer and coronary intervention recommended.');
+                  setTemperature('98.4 °F');
+                  setBloodPressure('148/92 mmHg');
+                  setHeartRate('96 bpm');
+                  setSpo2('95%');
+                  setPriority('urgent');
+                }
+              }}
+              className="px-2.5 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs flex items-center gap-1 transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Cardiac STEMI</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const pat = patients.find((p) => p.address.toLowerCase().includes('kukatpally')) || patients[0];
+                if (pat) {
+                  setSelectedPatientId(pat.id);
+                  setChiefComplaint('Continuous high fever for 3 days with intense retro-orbital headache and joint aching');
+                  setSymptoms('High fever, retro-orbital pain, severe headache, myalgia, arthralgia, petechial rash on forearm');
+                  setDiagnosis('Suspected Dengue Hemorrhagic Fever (DEN-2)');
+                  setDuration('3 days');
+                  setRelevantHistory('Lives in Kukatpally Ward 4 near stagnant open drain. Multiple neighbors febrile.');
+                  setCurrentTreatment('Oral Paracetamol 650mg TDS, Oral rehydration fluids advised.');
+                  setDoctorNotes('Tourniquet test positive. Platelet count 62,000/μL. Needs urgent NS1 antigen test, admission, and crystalloid monitoring.');
+                  setTemperature('103.4 °F');
+                  setBloodPressure('102/68 mmHg');
+                  setHeartRate('108 bpm');
+                  setSpo2('98%');
+                  setPriority('urgent');
+                }
+              }}
+              className="px-2.5 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold text-xs flex items-center gap-1 transition"
+            >
+              <Flame className="w-3.5 h-3.5 text-rose-600" />
+              <span>Dengue Outbreak Case</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const pat = patients.find((p) => p.address.toLowerCase().includes('charminar')) || patients[1] || patients[0];
+                if (pat) {
+                  setSelectedPatientId(pat.id);
+                  setChiefComplaint('Profuse painless watery diarrhea (>12 episodes) with extreme weakness & cramps');
+                  setSymptoms('Profuse rice-water diarrhea, painless watery stools, severe dehydration, sunken eyes, muscle cramps');
+                  setDiagnosis('Suspected Vibrio Cholerae / Acute Gastroenteritis with Severe Dehydration');
+                  setDuration('16 hours');
+                  setRelevantHistory('Resident in Charminar Ward 8. Uses municipal tap line.');
+                  setCurrentTreatment('Started IV Ringer Lactate 1000ml stat, ORS solution sip-by-sip.');
+                  setDoctorNotes('Skin pinch retraction > 2 seconds. Radial pulse thready. Needs immediate tertiary isolation and IV fluid resuscitation.');
+                  setTemperature('99.2 °F');
+                  setBloodPressure('90/58 mmHg');
+                  setHeartRate('116 bpm');
+                  setSpo2('97%');
+                  setPriority('emergency');
+                }
+              }}
+              className="px-2.5 py-1 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-900 font-bold text-xs flex items-center gap-1 transition"
+            >
+              <Droplet className="w-3.5 h-3.5 text-blue-600" />
+              <span>Cholera Case</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -465,6 +522,41 @@ export const CreateReferralView: React.FC<CreateReferralViewProps> = ({
               />
             </div>
           </div>
+
+          {/* Real-time Epidemiological Diagnostic Guidance Banner */}
+          <ClinicalAlertBanner
+            symptoms={symptoms}
+            diagnosis={diagnosis}
+            patientAddress={selectedPatient?.address || ''}
+            vitals={{
+              temperature,
+              bloodPressure,
+              hr: heartRate,
+              spo2,
+            }}
+            onApplyProtocol={(guidanceText, suggestedLabs) => {
+              setDoctorNotes((prev) =>
+                prev ? `${prev}\n\n${guidanceText}` : guidanceText
+              );
+              if (suggestedLabs.length > 0) {
+                setCurrentTreatment((prev) =>
+                  prev
+                    ? `${prev}\n[Ordered Labs]: ${suggestedLabs.join(', ')}`
+                    : `[Ordered Labs]: ${suggestedLabs.join(', ')}`
+                );
+              }
+              if (priority === 'routine') {
+                setPriority('urgent');
+              }
+            }}
+            onFlagStatutoryReport={(diseaseName) => {
+              setDoctorNotes((prev) =>
+                prev
+                  ? `${prev}\n[IDSP NOTICE]: Statutory Disease Surveillance report submitted for ${diseaseName}.`
+                  : `[IDSP NOTICE]: Statutory Disease Surveillance report submitted for ${diseaseName}.`
+              );
+            }}
+          />
 
           {/* Vitals */}
           <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">

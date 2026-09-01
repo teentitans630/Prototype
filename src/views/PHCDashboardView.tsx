@@ -263,6 +263,37 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
         </div>
       </div>
 
+      {/* REGIONAL EPIDEMIOLOGICAL SURVEILLANCE BANNER */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border border-rose-600/70 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-rose-600 flex items-center justify-center text-white shrink-0 shadow-md animate-pulse">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-500/30 text-rose-200 border border-rose-400/40">
+                Active IDSP Cluster: Kukatpally Ward 4
+              </span>
+              <span className="text-[11px] font-bold text-rose-400 font-mono">Dengue Virus (DEN-2)</span>
+            </div>
+            <h4 className="text-base font-bold text-white">
+              Elevated Febrile Surge Detected in Local Sector
+            </h4>
+            <p className="text-xs text-slate-300 max-w-2xl">
+              18 febrile cases recorded this week. Triage suspected patients with NS1 antigen, platelet monitoring, and mandatory statutory reporting.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onNavigate('create_referral')}
+          className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0 flex items-center justify-center gap-2"
+        >
+          <span>Launch Outbreak Referral</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* SECTION 1: QR & CODE SCANNER WORKSPACE */}
       <PatientScanner
         mode="doctor_patient_lookup"

@@ -40,10 +40,11 @@ import {
   Database,
 } from 'lucide-react';
 import { Referral, ReferralStatus } from '../types';
+import { GeoHealthAdvisory } from '../components/patient/GeoHealthAdvisory';
 
 interface PatientDashboardViewProps {
   onNavigate: (view: string, params?: Record<string, any>) => void;
-  initialTab?: 'pass' | 'guidance' | 'summary' | 'history' | 'profile';
+  initialTab?: 'pass' | 'guidance' | 'summary' | 'history' | 'profile' | 'advisory';
 }
 
 export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
@@ -68,7 +69,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [selectedReferralId, setSelectedReferralId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'pass' | 'guidance' | 'summary' | 'history' | 'profile'>(
+  const [activeTab, setActiveTab] = useState<'pass' | 'guidance' | 'summary' | 'history' | 'profile' | 'advisory'>(
     initialTab || 'pass'
   );
   const [showPatientSelect, setShowPatientSelect] = useState(false);
@@ -462,7 +463,7 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
       )}
 
       {/* If No Referrals Exist and user is on a referral-dependent tab */}
-      {!activeReferral && activeTab !== 'profile' ? (
+      {!activeReferral && activeTab !== 'profile' && activeTab !== 'advisory' ? (
         <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mx-auto">
             <FileText className="w-8 h-8" />
@@ -492,6 +493,18 @@ export const PatientDashboardView: React.FC<PatientDashboardViewProps> = ({
           </div>
         </div>
       ) : null}
+
+      {/* ========================================================================= */}
+      {/* TAB: PUBLIC HEALTH ADVISORY & TRIAGE HUB */}
+      {/* ========================================================================= */}
+      {activeTab === 'advisory' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <GeoHealthAdvisory
+            userWard={currentPatient?.address || 'Ward 4 (Kukatpally)'}
+            onNavigate={onNavigate}
+          />
+        </div>
+      )}
 
           {/* ========================================================================= */}
           {/* TAB 1: DIGITAL PASS & STATUS CARD (Default View) */}

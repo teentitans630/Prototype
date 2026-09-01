@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Building2,
@@ -12,6 +12,8 @@ import {
   PieChart as PieChartIcon,
   BarChart2,
   ShieldCheck,
+  Radio,
+  Flame,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,6 +30,7 @@ import {
   Bar,
   Legend,
 } from 'recharts';
+import { GovernmentCommandDashboard } from '../components/admin/GovernmentCommandDashboard';
 
 interface AdminDashboardViewProps {
   onNavigate: (view: string, params?: Record<string, any>) => void;
@@ -37,6 +40,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   onNavigate,
 }) => {
   const { facilities, referrals, statusHistory } = useApp();
+  const [adminSection, setAdminSection] = useState<'analytics' | 'eirc'>('eirc');
 
   // Metrics
   const totalFacilities = facilities.length;
@@ -105,29 +109,63 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-3xl p-5 text-white shadow-lg shadow-purple-950/20">
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-purple-200">
-              State Health Command Center
-            </span>
-            <h2 className="text-xl font-bold tracking-tight mt-0.5">
-              System Analytics & Tele-Triage KPIs
-            </h2>
-            <p className="text-xs text-purple-100 mt-1">
-              Multi-facility workload balancing and referral velocity metrics
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate('admin_facilities')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Load Simulator</span>
-          </button>
-        </div>
+      {/* Top Admin Section Switcher */}
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/60 shadow-inner">
+        <button
+          onClick={() => setAdminSection('eirc')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
+            adminSection === 'eirc'
+              ? 'bg-gradient-to-r from-slate-900 to-indigo-950 text-white shadow-md'
+              : 'text-slate-700 hover:text-slate-950 hover:bg-slate-300/50'
+          }`}
+        >
+          <Flame className={`w-4 h-4 ${adminSection === 'eirc' ? 'text-rose-400 animate-pulse' : 'text-rose-600'}`} />
+          <span>Epidemiological Command (EIRC)</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500/20 text-rose-300 border border-rose-400/30 font-extrabold">
+            LIVE
+          </span>
+        </button>
+
+        <button
+          onClick={() => setAdminSection('analytics')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
+            adminSection === 'analytics'
+              ? 'bg-white text-slate-900 shadow-md border border-slate-200'
+              : 'text-slate-700 hover:text-slate-950 hover:bg-slate-300/50'
+          }`}
+        >
+          <BarChart2 className="w-4 h-4 text-teal-600" />
+          <span>Tele-Triage & System KPIs</span>
+        </button>
       </div>
+
+      {adminSection === 'eirc' ? (
+        <GovernmentCommandDashboard onNavigate={onNavigate} />
+      ) : (
+        <>
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-3xl p-5 text-white shadow-lg shadow-purple-950/20">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-purple-200">
+                  State Health Command Center
+                </span>
+                <h2 className="text-xl font-bold tracking-tight mt-0.5">
+                  System Analytics & Tele-Triage KPIs
+                </h2>
+                <p className="text-xs text-purple-100 mt-1">
+                  Multi-facility workload balancing and referral velocity metrics
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigate('admin_facilities')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Load Simulator</span>
+              </button>
+            </div>
+          </div>
 
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -298,6 +336,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

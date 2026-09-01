@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ShieldCheck,
+  ShieldAlert,
   Stethoscope,
   Building,
   HeartPulse,
@@ -236,6 +237,20 @@ export const AppShell: React.FC<AppShellProps> = ({
                 >
                   <Activity className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'history' ? 'stroke-[2.5]' : ''}`} />
                   <span className="text-[10px] mt-0.5">Journey</span>
+                </button>
+
+                <button
+                  id="tab-patient-advisory"
+                  onClick={() => onNavigate('patient_dashboard', { tab: 'advisory' })}
+                  className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl transition ${
+                    currentView === 'patient_dashboard' && activePatientTab === 'advisory'
+                      ? 'text-rose-700 font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Epidemic Advisories & Self-Assessment"
+                >
+                  <ShieldAlert className={`w-5 h-5 ${currentView === 'patient_dashboard' && activePatientTab === 'advisory' ? 'stroke-[2.5] text-rose-600' : ''}`} />
+                  <span className="text-[10px] mt-0.5">Advisory</span>
                 </button>
 
                 <button

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { PatientProvider } from './context/PatientContext';
 import { AppShell } from './components/AppShell';
 import { LoginView } from './views/LoginView';
 import { PHCDashboardView } from './views/PHCDashboardView';
@@ -129,6 +130,10 @@ function MainApp() {
       case 'admin_facilities':
         return <AdminFacilitiesView onNavigate={handleNavigate} />;
 
+      case 'eirc':
+      case 'government_command':
+        return <AdminDashboardView onNavigate={handleNavigate} />;
+
       default:
         return <PHCDashboardView onNavigate={handleNavigate} />;
     }
@@ -148,7 +153,9 @@ function MainApp() {
 export default function App() {
   return (
     <AppProvider>
-      <MainApp />
+      <PatientProvider>
+        <MainApp />
+      </PatientProvider>
     </AppProvider>
   );
 }
