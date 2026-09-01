@@ -16,6 +16,10 @@ import { ReferralDetailView } from './views/ReferralDetailView';
 import { ReferralTimelineView } from './views/ReferralTimelineView';
 import { FacilitiesDirectoryView } from './views/FacilitiesDirectoryView';
 import { AdminFacilitiesView } from './views/AdminFacilitiesView';
+import { AsynchronousTeleTriage } from './components/rural/AsynchronousTeleTriage';
+import { PoCDiagnosticsLog } from './components/rural/PoCDiagnosticsLog';
+import { PriorityReferralPipeline } from './components/rural/PriorityReferralPipeline';
+import { MobileUnitFinder } from './components/rural/MobileUnitFinder';
 import { UserRole } from './types';
 
 interface NavigationState {
@@ -133,6 +137,18 @@ function MainApp() {
       case 'eirc':
       case 'government_command':
         return <AdminDashboardView onNavigate={handleNavigate} />;
+
+      case 'rural_triage':
+        return <AsynchronousTeleTriage onNavigate={handleNavigate} />;
+
+      case 'rural_poc':
+        return <PoCDiagnosticsLog onNavigate={handleNavigate} />;
+
+      case 'rural_referrals':
+        return <PriorityReferralPipeline onNavigate={handleNavigate} />;
+
+      case 'rural_mobile_units':
+        return <MobileUnitFinder onNavigate={handleNavigate} />;
 
       default:
         return <PHCDashboardView onNavigate={handleNavigate} />;

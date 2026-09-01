@@ -637,16 +637,42 @@ export const GovernmentCommandDashboard: React.FC<GovernmentCommandDashboardProp
                 </div>
               </div>
 
-              {/* Action Button */}
-              <button
-                onClick={() => {
-                  setActiveTab('policies');
-                }}
-                className="w-full py-2.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Adjust Cluster Policy Orders</span>
-              </button>
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setActionSuccessMsg(`🦟 Vector-Control Fogging & Larvicide deployed to ${activeSelectedCluster.wardCode} (${activeSelectedCluster.name})`);
+                      setTimeout(() => setActionSuccessMsg(null), 3500);
+                    }}
+                    className="py-2 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <Waves className="w-3.5 h-3.5" />
+                    <span>Vector Fogging</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActionSuccessMsg(`📱 Localized Alert SMS sent to ~45,000 residents in ${activeSelectedCluster.wardCode}`);
+                      setTimeout(() => setActionSuccessMsg(null), 3500);
+                    }}
+                    className="py-2 px-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-black shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <Megaphone className="w-3.5 h-3.5" />
+                    <span>Broadcast SMS</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('policies');
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Adjust Cluster Policy Orders</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

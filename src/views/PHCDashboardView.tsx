@@ -28,6 +28,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Plus,
+  Truck,
+  TestTube,
+  Network,
 } from 'lucide-react';
 
 interface PHCDashboardViewProps {
@@ -261,6 +264,61 @@ export const PHCDashboardView: React.FC<PHCDashboardViewProps> = ({ onNavigate }
             {patients.length} Total Registered Patients
           </span>
         </div>
+      </div>
+
+      {/* RURAL HEALTHCARE & FIELD LOGISTICS QUICK ACTIONS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <button
+          onClick={() => onNavigate('rural_triage')}
+          className="p-3.5 rounded-2xl bg-white border border-teal-200 hover:border-teal-400 hover:bg-teal-50/50 shadow-xs transition text-left flex flex-col justify-between space-y-2 group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center group-hover:scale-105 transition">
+            <Stethoscope className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-black text-slate-900 block">Field Tele-Triage</span>
+            <span className="text-[10px] text-slate-500">Offline ASHA / ANM Vitals</span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('rural_poc')}
+          className="p-3.5 rounded-2xl bg-white border border-teal-200 hover:border-teal-400 hover:bg-teal-50/50 shadow-xs transition text-left flex flex-col justify-between space-y-2 group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center group-hover:scale-105 transition">
+            <TestTube className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-black text-slate-900 block">PoC Diagnostics</span>
+            <span className="text-[10px] text-slate-500">Rapid Kits & Cold Chain</span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('rural_referrals')}
+          className="p-3.5 rounded-2xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 shadow-xs transition text-left flex flex-col justify-between space-y-2 group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center group-hover:scale-105 transition">
+            <Network className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-black text-slate-900 block">Referral Pipeline</span>
+            <span className="text-[10px] text-slate-500">108 Transit & Beds</span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('rural_mobile_units')}
+          className="p-3.5 rounded-2xl bg-white border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50 shadow-xs transition text-left flex flex-col justify-between space-y-2 group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center group-hover:scale-105 transition">
+            <Truck className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-black text-slate-900 block">Mobile Health Vans</span>
+            <span className="text-[10px] text-slate-500">MMU Routes & Doctors</span>
+          </div>
+        </button>
       </div>
 
       {/* REGIONAL EPIDEMIOLOGICAL SURVEILLANCE BANNER */}
